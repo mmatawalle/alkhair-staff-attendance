@@ -14,16 +14,126 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_codes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          revoked_at: string | null
+          token: string
+          valid_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          revoked_at?: string | null
+          token: string
+          valid_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          revoked_at?: string | null
+          token?: string
+          valid_date?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      time_entries: {
+        Row: {
+          daily_code_id: string | null
+          id: string
+          punched_at: string
+          type: Database["public"]["Enums"]["punch_type"]
+          user_id: string
+        }
+        Insert: {
+          daily_code_id?: string | null
+          id?: string
+          punched_at?: string
+          type: Database["public"]["Enums"]["punch_type"]
+          user_id: string
+        }
+        Update: {
+          daily_code_id?: string | null
+          id?: string
+          punched_at?: string
+          type?: Database["public"]["Enums"]["punch_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_daily_code_id_fkey"
+            columns: ["daily_code_id"]
+            isOneToOne: false
+            referencedRelation: "daily_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "employee"
+      punch_type: "in" | "out"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +260,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "employee"],
+      punch_type: ["in", "out"],
+    },
   },
 } as const
