@@ -23,7 +23,7 @@ function ClockScan() {
     (async () => {
       if (!code) {
         toast.error("No code in URL");
-        navigate({ to: "/" });
+        navigate({ to: "/dashboard" });
         return;
       }
       try {
@@ -32,7 +32,7 @@ function ClockScan() {
       } catch (err: any) {
         toast.error(err.message ?? "Punch failed");
       } finally {
-        navigate({ to: "/" });
+        navigate({ to: "/dashboard" });
       }
     })();
   }, [code, navigate, punch]);

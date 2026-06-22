@@ -31,7 +31,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Signed in");
-        navigate({ to: "/" });
+        navigate({ to: "/dashboard" });
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -45,7 +45,7 @@ function AuthPage() {
         toast.success("Account created — you can sign in.");
         // Auto sign in (auto-confirm is on)
         const { error: err2 } = await supabase.auth.signInWithPassword({ email, password });
-        if (!err2) navigate({ to: "/" });
+        if (!err2) navigate({ to: "/dashboard" });
         else setMode("signin");
       }
     } catch (err: any) {
