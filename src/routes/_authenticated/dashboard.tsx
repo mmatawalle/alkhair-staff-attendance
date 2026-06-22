@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { QrCode, LogIn, LogOut, History } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Home,
 });
 
