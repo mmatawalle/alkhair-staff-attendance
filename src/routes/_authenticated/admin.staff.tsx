@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/staff")({
-  component: AdminStaff;
+  component: AdminStaff,
 });
 
 function AdminStaff() {
