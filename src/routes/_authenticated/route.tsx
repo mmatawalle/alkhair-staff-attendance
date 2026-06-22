@@ -44,12 +44,12 @@ function AuthLayout() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between gap-2">
-          <Link to="/" className="flex items-center gap-2 font-semibold">
+          <Link to="/dashboard" className="flex items-center gap-2 font-semibold">
             <Clock className="h-5 w-5 text-primary" />
             <span>TimeClock</span>
           </Link>
           <nav className="flex items-center gap-1 flex-wrap">
-            <Link to="/" className="text-sm px-2 py-1 hover:underline">Home</Link>
+            <Link to="/dashboard" className="text-sm px-2 py-1 hover:underline">Home</Link>
             <Link to="/history" className="text-sm px-2 py-1 hover:underline flex items-center gap-1">
               <History className="h-3.5 w-3.5" /> My hours
             </Link>
