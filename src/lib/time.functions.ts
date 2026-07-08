@@ -2,17 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+// Rotation window for the shop-display QR (seconds).
+export const CODE_ROTATION_SECONDS = 180;
+
 function todayISO(): string {
-  // YYYY-MM-DD in UTC. Shop typically operates in one TZ — UTC date is fine
-  // for a simple daily-rotation token; admin can regenerate if needed.
   return new Date().toISOString().slice(0, 10);
 }
 
-function randomToken(): string {
-  // 24-char URL-safe token
-  const bytes = new Uint8Array(18);
-  crypto.getRandomValues(bytes);
-  return btoa(String.fromCharCode(...bytes))
+function randomToken(bytes = 18): string {
+  const buf = new Uint8Array(bytes);
+  crypto.getRandomValues(buf);
+  return btoa(String.fromCharCode(...buf))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
@@ -56,14 +56,13 @@ export const getMe = createServerFn({ method: "GET" })
     };
   });
 
-// --- Punch clock with daily code ---
+// --- Punch clock with rotating code ---
 export const punchClock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ token: z.string().min(4) }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Validate profile active
     const { data: prof } = await supabase
       .from("profiles")
       .select("active")
@@ -71,19 +70,20 @@ export const punchClock = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!prof?.active) throw new Error("Your account is inactive. Ask an admin.");
 
-    // Validate token = today's active code
     const today = todayISO();
     const { data: code, error: codeErr } = await supabase
       .from("daily_codes")
-      .select("id, valid_date, revoked_at")
+      .select("id, valid_date, revoked_at, expires_at")
       .eq("token", data.token)
       .maybeSingle();
     if (codeErr) throw new Error(codeErr.message);
-    if (!code) throw new Error("Invalid code. Ask the shop admin for today's QR.");
+    if (!code) throw new Error("Invalid code. Scan the shop's QR again.");
     if (code.revoked_at) throw new Error("This code was revoked. Scan the new one.");
     if (code.valid_date !== today) throw new Error("This code is not for today.");
+    if (code.expires_at && new Date(code.expires_at).getTime() < Date.now()) {
+      throw new Error("This code has expired. Scan the new one at the shop.");
+    }
 
-    // Determine next type: opposite of last entry today (default 'in')
     const { data: last } = await supabase
       .from("time_entries")
       .select("type")
@@ -103,62 +103,60 @@ export const punchClock = createServerFn({ method: "POST" })
     return { type: inserted.type as "in" | "out", punched_at: inserted.punched_at as string };
   });
 
-// --- Admin: today's code (get-or-create) ---
+// --- Admin: get current active code (fallback for old /admin/display page) ---
 export const getOrCreateTodayCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabase, userId } = context;
-    const today = todayISO();
+    const nowIso = new Date().toISOString();
 
-    const { data: existing, error: exErr } = await supabase
+    const { data: existing } = await supabase
       .from("daily_codes")
-      .select("id, token, valid_date, created_at, revoked_at")
-      .eq("valid_date", today)
+      .select("id, token, valid_date, created_at, revoked_at, expires_at")
       .is("revoked_at", null)
+      .gt("expires_at", nowIso)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (exErr) throw new Error(exErr.message);
     if (existing) return existing;
 
     const token = randomToken();
+    const expiresAt = new Date(Date.now() + CODE_ROTATION_SECONDS * 1000).toISOString();
     const { data: created, error: insErr } = await supabase
       .from("daily_codes")
-      .insert({ token, valid_date: today, created_by: userId })
-      .select("id, token, valid_date, created_at, revoked_at")
+      .insert({ token, valid_date: todayISO(), created_by: userId, expires_at: expiresAt })
+      .select("id, token, valid_date, created_at, revoked_at, expires_at")
       .single();
     if (insErr) throw new Error(insErr.message);
     return created;
   });
 
-// --- Admin: regenerate today's code ---
+// --- Admin: force-regenerate (revoke current + issue new) ---
 export const regenerateTodayCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabase, userId } = context;
-    const today = todayISO();
 
-    // Revoke any active codes for today
     const { error: revErr } = await supabase
       .from("daily_codes")
       .update({ revoked_at: new Date().toISOString() })
-      .eq("valid_date", today)
       .is("revoked_at", null);
     if (revErr) throw new Error(revErr.message);
 
     const token = randomToken();
+    const expiresAt = new Date(Date.now() + CODE_ROTATION_SECONDS * 1000).toISOString();
     const { data: created, error: insErr } = await supabase
       .from("daily_codes")
-      .insert({ token, valid_date: today, created_by: userId })
-      .select("id, token, valid_date, created_at, revoked_at")
+      .insert({ token, valid_date: todayISO(), created_by: userId, expires_at: expiresAt })
+      .select("id, token, valid_date, created_at, revoked_at, expires_at")
       .single();
     if (insErr) throw new Error(insErr.message);
     return created;
   });
 
-// --- My entries (with optional range) ---
+// --- My entries ---
 export const getMyEntries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
@@ -200,7 +198,7 @@ export const getTeamEntries = createServerFn({ method: "GET" })
     return { entries: entriesRes.data ?? [], profiles: profilesRes.data ?? [] };
   });
 
-// --- Admin: list staff ---
+// --- Admin: staff list ---
 export const listStaff = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -240,7 +238,6 @@ export const setAdminRole = createServerFn({ method: "POST" })
       const { error } = await supabase
         .from("user_roles")
         .insert({ user_id: data.user_id, role: "admin" });
-      // ignore unique violation
       if (error && !String(error.message).toLowerCase().includes("duplicate")) {
         throw new Error(error.message);
       }
@@ -268,6 +265,59 @@ export const setStaffActive = createServerFn({ method: "POST" })
       .from("profiles")
       .update({ active: data.active })
       .eq("id", data.user_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ============================================================
+// Kiosk devices — one paired shop computer per row.
+// ============================================================
+
+export const listKioskDevices = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabase } = context;
+    const { data, error } = await (supabase as any)
+      .from("kiosk_devices")
+      .select("id, label, created_at, revoked_at, last_seen_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const pairKioskDevice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ label: z.string().max(80).optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabase, userId } = context;
+    const token = randomToken(24); // longer for kiosk
+    const { data: row, error } = await (supabase as any)
+      .from("kiosk_devices")
+      .insert({
+        label: data.label ?? "Shop computer",
+        token,
+        created_by: userId,
+      })
+      .select("id, label, token, created_at")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const revokeKioskDevice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabase } = context;
+    const { error } = await (supabase as any)
+      .from("kiosk_devices")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

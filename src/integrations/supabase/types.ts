@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          expires_at: string | null
           id: string
           revoked_at: string | null
           token: string
@@ -26,6 +27,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          expires_at?: string | null
           id?: string
           revoked_at?: string | null
           token: string
@@ -34,10 +36,41 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          expires_at?: string | null
           id?: string
           revoked_at?: string | null
           token?: string
           valid_date?: string
+        }
+        Relationships: []
+      }
+      kiosk_devices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          last_seen_at: string | null
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          last_seen_at?: string | null
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          last_seen_at?: string | null
+          revoked_at?: string | null
+          token?: string
         }
         Relationships: []
       }

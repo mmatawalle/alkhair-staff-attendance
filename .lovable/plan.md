@@ -1,69 +1,51 @@
-# Employee Time Tracker — Plan
 
-A web app where employees sign in on their phones, scan a daily shop QR code to clock in/out, and admins manage staff and view team hours.
+## Goal
 
-## Core flows
+Give the shop one browser tab that always displays a fresh QR/code, so nobody prints anything and no admin has to sign in each morning. Employees scan with their phone, tap **Confirm**, and are clocked in/out.
 
-**Employee**
-- Sign up / log in with email + password
-- Home screen shows current status (Clocked in/out) and big "Scan QR" button
-- Scan the shop's daily QR → records clock-in (or clock-out if already in) with timestamp
-- View own log: today, this week, this month, total hours
+## How it will work day-to-day
 
-**Admin**
-- Same login, with admin role
-- "Shop Display" page: shows today's QR code full-screen for the shop computer; auto-rotates daily at midnight; "Regenerate now" button invalidates the current code and issues a new one
-- Team dashboard: all employees, hours per day/week, currently clocked-in list, CSV export
-- Manage employees: promote to admin, deactivate
+1. Admin signs in once at `/kiosk/setup` on the shop computer and taps **Pair this device**.
+2. That browser stores a long-lived kiosk token and redirects to `/kiosk`, which stays open full-screen.
+3. `/kiosk` shows today's QR + big manual code. Every ~3 minutes the code rotates automatically; the page refreshes to display the new one. No login prompts.
+4. An employee scans the QR on their phone → lands on `/clock?code=…` (must be signed in) → sees "Clock IN" / "Clock OUT" button → taps once → confirmation screen.
+5. Admin can revoke the paired kiosk anytime from `/admin/staff` (new "Kiosk devices" section) — e.g. if the shop PC is lost.
 
-## Verification logic
+## What changes
 
-- One active `daily_code` row per day (UUID token encoded in QR)
-- Auto-generated on first request of the day; admin can force-regenerate (marks previous invalid, creates new)
-- Clock-in/out server function validates: token matches today's active code, not expired, employee is active
-- QR encodes a URL like `/clock?code=<token>` — opening on phone (already logged in) triggers the punch and shows confirmation
+### Database
+- New table `kiosk_devices` — id, label (e.g. "Front counter PC"), token (random, unique, indexed), created_by, revoked_at.
+  - RLS: admins manage rows; the paired token is used only by an unauthenticated server route (validated server-side), so no anon SELECT.
+- `daily_codes` gains `expires_at` (timestamptz) so a code can be valid for a short window instead of the whole day. Existing "one code per day" logic is replaced by "current active code = most recent non-revoked, non-expired code". The `valid_date` column stays for reporting.
 
-## Tech / backend (Lovable Cloud)
+### Server functions / routes
+- `pairKioskDevice` (admin only): creates a `kiosk_devices` row, returns the token once. Called by `/kiosk/setup`.
+- `revokeKioskDevice` (admin only).
+- `listKioskDevices` (admin only).
+- New public server route `GET /api/public/kiosk/current-code?token=…`:
+  - Validates the kiosk token against `kiosk_devices` (not revoked).
+  - Returns `{ token, expiresAt }` for the current active `daily_codes` row.
+  - If none exists or the latest one is expired, it rotates: inserts a new row with `expires_at = now() + rotation window` and returns that.
+  - This is the ONLY endpoint the kiosk page needs — it works without a Supabase login on the shop PC.
+- The employee-facing `punchWithCode` server fn already validates the code; it will additionally reject expired/revoked codes.
 
-- Auth: email + password
-- Tables (all RLS-enabled, in `public` with proper GRANTs):
-  - `profiles` (id → auth.users, full_name, active)
-  - `user_roles` (user_id, role enum: admin/employee) + `has_role()` security-definer function
-  - `daily_codes` (id, token, valid_date, created_at, revoked_at, created_by)
-  - `time_entries` (id, user_id, type: in/out, timestamp, daily_code_id)
-- RLS:
-  - Employees: select/insert own time_entries; select own profile
-  - Admins: select all profiles, time_entries, daily_codes; insert/update daily_codes; manage roles
-  - daily_codes select allowed to authenticated (needed to validate scans)
-- Server functions (`createServerFn` + `requireSupabaseAuth`):
-  - `getOrCreateTodayCode` (admin)
-  - `regenerateTodayCode` (admin)
-  - `punchClock({ token })` — validates + inserts in/out
-  - `getMyEntries`, `getTeamEntries` (admin)
+### Pages
+- `/kiosk/setup` (admin, authenticated): "Pair this device" button, optional label input. On success writes the token into `localStorage` under `kiosk_token` and redirects to `/kiosk`.
+- `/kiosk` (PUBLIC route, no auth): reads `kiosk_token` from `localStorage`; if missing, tells the user to visit `/kiosk/setup`. Polls the public endpoint above every 20s, renders the QR + manual code, shows a small countdown "New code in 2:14". Full-screen friendly.
+- `/clock?code=…` (existing, authenticated): change from auto-punch to a two-step **Confirm Clock IN / Clock OUT** button, then confirmation state.
+- `/admin/staff`: add a "Kiosk devices" panel listing paired devices with a Revoke button. The old printable `/admin/display` page stays as a fallback but is no longer the primary flow.
 
-## Routes
+### Rotation
+- Rotation window: 3 minutes (configurable constant). Kiosk polls every 20s; when it sees a new token it re-renders the QR.
+- No cron job needed — rotation happens lazily inside the public endpoint whenever the current code has expired. This keeps things simple and avoids server-side scheduling.
 
-Public: `/`, `/auth`
-Authenticated (`_authenticated/`):
-- `/` employee home (status + scan button + recent entries)
-- `/clock?code=...` handles scan, redirects to home with toast
-- `/history` personal hours
-- `/admin/display` shop QR full-screen (admin only)
-- `/admin/team` team dashboard + CSV export
-- `/admin/staff` employee management
+### Security notes
+- The kiosk token grants only "read the current punch code"; it cannot punch, read entries, or see any user data.
+- Employees still must be signed in on their own phone to actually punch — the QR alone is worthless without an account.
+- Rotating the QR every few minutes means a photograph taken at 9am is unusable by 9:05am, so remote/off-shift punching is prevented in practice.
+- Admin can revoke a kiosk instantly; the public endpoint will reject the old token on the next 20s poll.
 
-Admin sub-routes gated by `has_role` check in loader; non-admins redirected.
-
-## UI
-
-- Mobile-first, large tap targets
-- QR generation via `qrcode` npm package
-- Camera scanning via the URL-based approach (employee taps QR image rendered as a link on the shop screen, or uses phone's native camera which opens the URL) — no in-app scanner library needed
-
-## First-admin bootstrap
-
-First registered user is auto-promoted to admin via a one-time DB trigger (only if no admin exists yet). Subsequent users default to employee role; admins can promote others.
-
-## Out of scope (ask if needed)
-
-- Geofencing, payroll export beyond CSV, shift scheduling, break tracking, offline mode
+## Out of scope for this change
+- Geolocation / IP restrictions.
+- Multiple simultaneous shop locations (the model supports it, but no UI to filter by location yet).
+- Native fullscreen / screensaver behaviour on the shop OS — that's a browser setting.

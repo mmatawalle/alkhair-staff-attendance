@@ -55,8 +55,8 @@ function AuthLayout() {
             </Link>
             {me?.isAdmin && (
               <>
-                <Link to="/admin/display" className="text-sm px-2 py-1 hover:underline flex items-center gap-1">
-                  <Monitor className="h-3.5 w-3.5" /> Display
+                <Link to="/kiosk-setup" className="text-sm px-2 py-1 hover:underline flex items-center gap-1">
+                  <Monitor className="h-3.5 w-3.5" /> Kiosk
                 </Link>
                 <Link to="/admin/team" className="text-sm px-2 py-1 hover:underline flex items-center gap-1">
                   <Users className="h-3.5 w-3.5" /> Team
