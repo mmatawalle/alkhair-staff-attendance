@@ -18,6 +18,7 @@ import { Route as AuthenticatedClockRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin.team'
 import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authenticated/admin.staff'
 import { Route as AuthenticatedAdminDisplayRouteImport } from './routes/_authenticated/admin.display'
+import { Route as ApiPublicKioskCurrentCodeRouteImport } from './routes/api/public/kiosk/current-code'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -64,6 +65,12 @@ const AuthenticatedAdminDisplayRoute =
     path: '/admin/display',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicKioskCurrentCodeRoute =
+  ApiPublicKioskCurrentCodeRouteImport.update({
+    id: '/api/public/kiosk/current-code',
+    path: '/api/public/kiosk/current-code',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/admin/display': typeof AuthenticatedAdminDisplayRoute
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/public/kiosk/current-code': typeof ApiPublicKioskCurrentCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,6 +92,7 @@ export interface FileRoutesByTo {
   '/admin/display': typeof AuthenticatedAdminDisplayRoute
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/public/kiosk/current-code': typeof ApiPublicKioskCurrentCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,6 +105,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/display': typeof AuthenticatedAdminDisplayRoute
   '/_authenticated/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/api/public/kiosk/current-code': typeof ApiPublicKioskCurrentCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/admin/display'
     | '/admin/staff'
     | '/admin/team'
+    | '/api/public/kiosk/current-code'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/admin/display'
     | '/admin/staff'
     | '/admin/team'
+    | '/api/public/kiosk/current-code'
   id:
     | '__root__'
     | '/'
@@ -129,12 +141,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/display'
     | '/_authenticated/admin/staff'
     | '/_authenticated/admin/team'
+    | '/api/public/kiosk/current-code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicKioskCurrentCodeRoute: typeof ApiPublicKioskCurrentCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -202,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDisplayRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/kiosk/current-code': {
+      id: '/api/public/kiosk/current-code'
+      path: '/api/public/kiosk/current-code'
+      fullPath: '/api/public/kiosk/current-code'
+      preLoaderRoute: typeof ApiPublicKioskCurrentCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -230,6 +251,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicKioskCurrentCodeRoute: ApiPublicKioskCurrentCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
