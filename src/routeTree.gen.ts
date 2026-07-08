@@ -9,9 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedKioskSetupRouteImport } from './routes/_authenticated/kiosk-setup'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClockRouteImport } from './routes/_authenticated/clock'
@@ -20,6 +22,11 @@ import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminDisplayRouteImport } from './routes/_authenticated/admin.display'
 import { Route as ApiPublicKioskCurrentCodeRouteImport } from './routes/api/public/kiosk/current-code'
 
+const KioskRoute = KioskRouteImport.update({
+  id: '/kiosk',
+  path: '/kiosk',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -33,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedKioskSetupRoute = AuthenticatedKioskSetupRouteImport.update({
+  id: '/kiosk-setup',
+  path: '/kiosk-setup',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   id: '/history',
@@ -75,9 +87,11 @@ const ApiPublicKioskCurrentCodeRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/kiosk': typeof KioskRoute
   '/clock': typeof AuthenticatedClockRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/kiosk-setup': typeof AuthenticatedKioskSetupRoute
   '/admin/display': typeof AuthenticatedAdminDisplayRoute
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -86,9 +100,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/kiosk': typeof KioskRoute
   '/clock': typeof AuthenticatedClockRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/kiosk-setup': typeof AuthenticatedKioskSetupRoute
   '/admin/display': typeof AuthenticatedAdminDisplayRoute
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -99,9 +115,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/kiosk': typeof KioskRoute
   '/_authenticated/clock': typeof AuthenticatedClockRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/_authenticated/kiosk-setup': typeof AuthenticatedKioskSetupRoute
   '/_authenticated/admin/display': typeof AuthenticatedAdminDisplayRoute
   '/_authenticated/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -112,9 +130,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/kiosk'
     | '/clock'
     | '/dashboard'
     | '/history'
+    | '/kiosk-setup'
     | '/admin/display'
     | '/admin/staff'
     | '/admin/team'
@@ -123,9 +143,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/kiosk'
     | '/clock'
     | '/dashboard'
     | '/history'
+    | '/kiosk-setup'
     | '/admin/display'
     | '/admin/staff'
     | '/admin/team'
@@ -135,9 +157,11 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/kiosk'
     | '/_authenticated/clock'
     | '/_authenticated/dashboard'
     | '/_authenticated/history'
+    | '/_authenticated/kiosk-setup'
     | '/_authenticated/admin/display'
     | '/_authenticated/admin/staff'
     | '/_authenticated/admin/team'
@@ -148,11 +172,19 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  KioskRoute: typeof KioskRoute
   ApiPublicKioskCurrentCodeRoute: typeof ApiPublicKioskCurrentCodeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/kiosk': {
+      id: '/kiosk'
+      path: '/kiosk'
+      fullPath: '/kiosk'
+      preLoaderRoute: typeof KioskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -173,6 +205,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/kiosk-setup': {
+      id: '/_authenticated/kiosk-setup'
+      path: '/kiosk-setup'
+      fullPath: '/kiosk-setup'
+      preLoaderRoute: typeof AuthenticatedKioskSetupRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/history': {
       id: '/_authenticated/history'
@@ -230,6 +269,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClockRoute: typeof AuthenticatedClockRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
+  AuthenticatedKioskSetupRoute: typeof AuthenticatedKioskSetupRoute
   AuthenticatedAdminDisplayRoute: typeof AuthenticatedAdminDisplayRoute
   AuthenticatedAdminStaffRoute: typeof AuthenticatedAdminStaffRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
@@ -239,6 +279,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClockRoute: AuthenticatedClockRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
+  AuthenticatedKioskSetupRoute: AuthenticatedKioskSetupRoute,
   AuthenticatedAdminDisplayRoute: AuthenticatedAdminDisplayRoute,
   AuthenticatedAdminStaffRoute: AuthenticatedAdminStaffRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
@@ -251,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  KioskRoute: KioskRoute,
   ApiPublicKioskCurrentCodeRoute: ApiPublicKioskCurrentCodeRoute,
 }
 export const routeTree = rootRouteImport
