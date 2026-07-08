@@ -78,14 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "TimeClock — Employee time tracking" },
+      { name: "description", content: "QR-based employee clock in / clock out with a daily code and a simple team dashboard." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "TimeClock — Employee time tracking" },
+      { property: "og:description", content: "QR-based employee clock in / clock out with a daily code and a simple team dashboard." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "TimeClock — Employee time tracking" },
+      { name: "twitter:description", content: "QR-based employee clock in / clock out with a daily code and a simple team dashboard." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8d747fc1-ad74-4da7-842a-e99720ba9447/id-preview-456c9ade--a4302d4c-9a22-4463-83dd-1e481af41749.lovable.app-1782090349001.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8d747fc1-ad74-4da7-842a-e99720ba9447/id-preview-456c9ade--a4302d4c-9a22-4463-83dd-1e481af41749.lovable.app-1782090349001.png" },
     ],
     links: [
       {
