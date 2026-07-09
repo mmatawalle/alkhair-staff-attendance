@@ -71,12 +71,13 @@ export const punchClock = createServerFn({ method: "POST" })
     if (!prof?.active) throw new Error("Your account is inactive. Ask an admin.");
 
     const today = todayISO();
-    const { data: code, error: codeErr } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: code, error: codeErr } = await (supabaseAdmin as any)
       .from("daily_codes")
       .select("id, valid_date, revoked_at, expires_at")
       .eq("token", data.token)
       .maybeSingle();
-    if (codeErr) throw new Error(codeErr.message);
+    if (codeErr) throw new Error("Invalid code. Scan the shop's QR again.");
     if (!code) throw new Error("Invalid code. Scan the shop's QR again.");
     if (code.revoked_at) throw new Error("This code was revoked. Scan the new one.");
     if (code.valid_date !== today) throw new Error("This code is not for today.");
