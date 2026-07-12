@@ -25,7 +25,7 @@ function safeRedirect(target: string | undefined): string {
 }
 
 function AuthPage() {
-  useNavigate();
+  
   const { redirect: redirectTo } = Route.useSearch();
   const target = safeRedirect(redirectTo);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
