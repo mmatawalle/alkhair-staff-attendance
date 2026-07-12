@@ -1,5 +1,6 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,17 +12,32 @@ import { Clock } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (s) => z.object({ redirect: z.string().optional() }).parse(s),
   head: () => ({ meta: [{ title: "Sign in — TimeClock" }] }),
   component: AuthPage,
 });
 
+function safeRedirect(target: string | undefined): string {
+  if (!target) return "/dashboard";
+  // Only allow same-origin relative paths
+  if (!target.startsWith("/") || target.startsWith("//")) return "/dashboard";
+  return target;
+}
+
 function AuthPage() {
-  const navigate = useNavigate();
+  
+  const { redirect: redirectTo } = Route.useSearch();
+  const target = safeRedirect(redirectTo);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const goNext = () => {
+    // Use raw href to preserve query params like ?code=
+    window.location.href = target;
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,21 +47,20 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Signed in");
-        navigate({ to: "/dashboard" });
+        goNext();
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + target,
             data: { full_name: fullName },
           },
         });
         if (error) throw error;
         toast.success("Account created — you can sign in.");
-        // Auto sign in (auto-confirm is on)
         const { error: err2 } = await supabase.auth.signInWithPassword({ email, password });
-        if (!err2) navigate({ to: "/dashboard" });
+        if (!err2) goNext();
         else setMode("signin");
       }
     } catch (err: any) {
