@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { toast } from "sonner";
-import { QrCode, LogIn, LogOut, History } from "lucide-react";
+import { QrCode, LogIn, LogOut, History, Camera } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import { QrScannerDialog } from "@/components/qr-scanner-dialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Home,
