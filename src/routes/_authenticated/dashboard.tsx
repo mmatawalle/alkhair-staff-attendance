@@ -73,8 +73,15 @@ function Home() {
           <div className="rounded-lg border bg-muted/30 p-4 text-center space-y-3">
             <QrCode className="h-10 w-10 mx-auto text-primary" />
             <p className="text-sm text-muted-foreground">
-              Scan the shop's QR code with your phone camera, or enter today's code below.
+              Scan the shop's QR code, or enter today's code below.
             </p>
+            <Button
+              variant="secondary"
+              className="mx-auto"
+              onClick={() => setScanOpen(true)}
+            >
+              <Camera className="h-4 w-4 mr-1" /> Scan QR with camera
+            </Button>
             <div className="flex gap-2 max-w-sm mx-auto">
               <Input
                 placeholder="Today's code"
@@ -99,6 +106,14 @@ function Home() {
           </div>
         </CardContent>
       </Card>
+
+      <QrScannerDialog
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        onDetected={(scanned) => {
+          navigate({ to: "/clock", search: { code: scanned } });
+        }}
+      />
 
       <Card>
         <CardHeader>
