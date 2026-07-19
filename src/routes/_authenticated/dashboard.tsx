@@ -31,6 +31,7 @@ function Home() {
 
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
 
   const lastType = meQ.data?.lastEntry?.type;
   const isClockedIn = lastType === "in";
