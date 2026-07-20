@@ -64,7 +64,7 @@ function Home() {
       toast.success(`Clocked ${res.type === "in" ? "in" : "out"} at ${format(new Date(res.punched_at), "p")}`);
       setCode("");
       qc.invalidateQueries({ queryKey: ["me"] });
-      qc.invalidateQueries({ queryKey: ["my-entries", 7] });
+      qc.invalidateQueries({ queryKey: ["my-entries", 14] });
     } catch (err: any) {
       toast.error(err.message ?? "Could not punch");
     } finally {
