@@ -250,8 +250,20 @@ function AdminTeam() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">{u.today.toFixed(1)}h</TableCell>
-                  <TableCell className="text-right">{u.week.toFixed(1)}h</TableCell>
+                  <TableCell className="text-right">
+                    <div>{u.week.toFixed(1)}h / {Number(u.profile.weekly_target_hours ?? 40).toFixed(1)}h</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {(() => {
+                        const t = Number(u.profile.weekly_target_hours ?? 40);
+                        const pct = t > 0 ? Math.min(100, (u.week / t) * 100) : 0;
+                        return `${pct.toFixed(0)}%`;
+                      })()}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">{u.period.toFixed(1)}h</TableCell>
+                  <TableCell className="text-right text-xs text-muted-foreground">
+                    {Number(u.profile.weekly_target_hours ?? 40).toFixed(1)}h
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1.5">
                       {u.clockedIn ? (
