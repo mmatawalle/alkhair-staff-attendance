@@ -307,6 +307,23 @@ export const setStaffActive = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// --- Admin: set weekly target hours ---
+export const setStaffWeeklyTarget = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ user_id: z.string().uuid(), weekly_target_hours: z.number().min(0).max(168) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ weekly_target_hours: data.weekly_target_hours })
+      .eq("id", data.user_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ============================================================
 // Kiosk devices — one paired shop computer per row.
 // ============================================================
