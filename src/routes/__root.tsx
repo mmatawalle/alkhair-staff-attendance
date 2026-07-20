@@ -121,6 +121,36 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const appId = import.meta.env.VITE_ONESIGNAL_APP_ID;
+      if (appId) {
+        const initOneSignal = () => {
+          const OneSignal = (window as any).OneSignal || [];
+          OneSignal.push(() => {
+            OneSignal.init({
+              appId: appId,
+              allowLocalhostAsSecureOrigin: true,
+              notifyButton: {
+                enable: false,
+              },
+            });
+          });
+        };
+
+        if (!(window as any).OneSignal) {
+          const script = document.createElement("script");
+          script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+          script.defer = true;
+          script.onload = initOneSignal;
+          document.head.appendChild(script);
+        } else {
+          initOneSignal();
+        }
+      }
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster richColors position="top-center" />

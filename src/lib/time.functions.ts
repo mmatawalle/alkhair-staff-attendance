@@ -65,7 +65,7 @@ export const punchClock = createServerFn({ method: "POST" })
 
     const { data: prof } = await supabase
       .from("profiles")
-      .select("active")
+      .select("active, full_name")
       .eq("id", userId)
       .maybeSingle();
     if (!prof?.active) throw new Error("Your account is inactive. Ask an admin.");
@@ -100,6 +100,43 @@ export const punchClock = createServerFn({ method: "POST" })
       .select("id, type, punched_at")
       .single();
     if (insErr) throw new Error(insErr.message);
+
+    // Send Push Notification asynchronously via OneSignal
+    const onesignalAppId = process.env.VITE_ONESIGNAL_APP_ID;
+    const onesignalApiKey = process.env.ONESIGNAL_REST_API_KEY;
+    if (onesignalAppId && onesignalApiKey) {
+      const name = prof?.full_name || "An employee";
+      const action = inserted.type === "in" ? "CLOCKED IN" : "CLOCKED OUT";
+      const timeStr = new Date(inserted.punched_at).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+      const title = "Attendance Alert";
+      const message = `${name} has ${action} at ${timeStr}.`;
+
+      fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Authorization: `Basic ${onesignalApiKey}`,
+        },
+        body: JSON.stringify({
+          app_id: onesignalAppId,
+          included_segments: ["Subscribed Users"],
+          headings: { en: title },
+          contents: { en: message },
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            console.error("Failed to send OneSignal push notification, status:", res.status);
+          }
+        })
+        .catch((err) => {
+          console.error("Error sending OneSignal push notification:", err);
+        });
+    }
 
     return { type: inserted.type as "in" | "out", punched_at: inserted.punched_at as string };
   });
@@ -321,4 +358,35 @@ export const revokeKioskDevice = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const createManualPunch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        targetUserId: z.string().uuid(),
+        type: z.enum(["in", "out"]),
+        customTime: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const insertedTime = data.customTime ? new Date(data.customTime).toISOString() : new Date().toISOString();
+
+    const { data: inserted, error } = await (supabaseAdmin as any)
+      .from("time_entries")
+      .insert({
+        user_id: data.targetUserId,
+        type: data.type,
+        punched_at: insertedTime,
+      })
+      .select("id, type, punched_at")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return inserted;
   });

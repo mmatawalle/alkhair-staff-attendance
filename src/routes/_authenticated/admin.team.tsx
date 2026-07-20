@@ -1,14 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getTeamEntries } from "@/lib/time.functions";
+import { getTeamEntries, createManualPunch } from "@/lib/time.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format, isSameDay, isSameWeek } from "date-fns";
-import { Download } from "lucide-react";
+import { Download, Clock, LogOut } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
   component: AdminTeam,
@@ -36,11 +46,43 @@ function hoursFor(entries: Entry[]): number {
 
 function AdminTeam() {
   const fetchTeam = useServerFn(getTeamEntries);
+  const punchManual = useServerFn(createManualPunch);
+  const qc = useQueryClient();
   const [days, setDays] = useState(14);
   const q = useQuery({
     queryKey: ["team-entries", days],
     queryFn: () => fetchTeam({ data: { days } }),
   });
+
+  const [targetUser, setTargetUser] = useState<Profile | null>(null);
+  const [punchType, setPunchType] = useState<"in" | "out">("in");
+  const [customTime, setCustomTime] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const manualPunchM = useMutation({
+    mutationFn: (v: { targetUserId: string; type: "in" | "out"; customTime?: string }) =>
+      punchManual({ data: v }),
+    onSuccess: (res) => {
+      toast.success(`Logged manual clock-${res.type}`);
+      qc.invalidateQueries({ queryKey: ["team-entries", days] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message ?? "Failed to log punch");
+    },
+  });
+
+  const handleSubmitManual = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetUser) return;
+    const isoTime = customTime ? new Date(customTime).toISOString() : undefined;
+    await manualPunchM.mutateAsync({
+      targetUserId: targetUser.id,
+      type: punchType,
+      customTime: isoTime,
+    });
+    setDialogOpen(false);
+    setCustomTime("");
+  };
 
   const { perUser, currentlyIn } = useMemo(() => {
     const entries = (q.data?.entries ?? []) as Entry[];
@@ -100,10 +142,49 @@ function AdminTeam() {
     URL.revokeObjectURL(a.href);
   };
 
+  const [subscribed, setSubscribed] = useState(false);
+  const [canSubscribe, setCanSubscribe] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const OneSignal = (window as any).OneSignal;
+      if (OneSignal) {
+        setCanSubscribe(true);
+        OneSignal.push(() => {
+          setSubscribed(OneSignal.User.PushSubscription.optedIn);
+          OneSignal.User.PushSubscription.addEventListener("change", (event: any) => {
+            setSubscribed(event.current.optedIn);
+          });
+        });
+      }
+    }
+  }, []);
+
+  const handleSubscribe = () => {
+    const OneSignal = (window as any).OneSignal;
+    if (OneSignal) {
+      OneSignal.push(() => {
+        OneSignal.User.PushSubscription.optIn();
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-semibold">Team dashboard</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">Team dashboard</h1>
+          {canSubscribe && (
+            <button
+              onClick={handleSubscribe}
+              className={`text-xs flex items-center gap-1 hover:underline ${
+                subscribed ? "text-emerald-400" : "text-[#38bdf8]"
+              }`}
+            >
+              <span>🔔</span> {subscribed ? "Subscribed to Push Alerts" : "Enable iPhone/Push Alerts"}
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           {[7, 14, 30].map((d) => (
             <Button key={d} variant={days === d ? "default" : "outline"} size="sm" onClick={() => setDays(d)}>
@@ -148,6 +229,7 @@ function AdminTeam() {
                 <TableHead className="text-right">Today</TableHead>
                 <TableHead className="text-right">This week</TableHead>
                 <TableHead className="text-right">Last {days}d</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -169,6 +251,94 @@ function AdminTeam() {
                   <TableCell className="text-right">{u.today.toFixed(1)}h</TableCell>
                   <TableCell className="text-right">{u.week.toFixed(1)}h</TableCell>
                   <TableCell className="text-right">{u.period.toFixed(1)}h</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5">
+                      {u.clockedIn ? (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          disabled={manualPunchM.isPending}
+                          onClick={() =>
+                            manualPunchM.mutate({
+                              targetUserId: u.profile.id,
+                              type: "out",
+                            })
+                          }
+                        >
+                          <LogOut className="h-3 w-3 mr-1" /> Force Out
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-500"
+                          disabled={manualPunchM.isPending}
+                          onClick={() =>
+                            manualPunchM.mutate({
+                              targetUserId: u.profile.id,
+                              type: "in",
+                            })
+                          }
+                        >
+                          <Clock className="h-3 w-3 mr-1" /> Force In
+                        </Button>
+                      )}
+                      
+                      <Dialog open={dialogOpen && targetUser?.id === u.profile.id} onOpenChange={(open) => {
+                        if (open) {
+                          setTargetUser(u.profile);
+                          setDialogOpen(true);
+                        } else {
+                          setDialogOpen(false);
+                          setTargetUser(null);
+                        }
+                      }}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+                            Adjust
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-slate-900 text-slate-100 border-slate-800">
+                          <form onSubmit={handleSubmitManual} className="space-y-4">
+                            <DialogHeader>
+                              <DialogTitle className="text-lg">Adjust Attendance: {u.profile.full_name}</DialogTitle>
+                              <DialogDescription className="text-slate-400 text-xs">
+                                Manually log a clock in or clock out for this employee.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-3 py-2 text-sm">
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</label>
+                                <select 
+                                  value={punchType} 
+                                  onChange={(e) => setPunchType(e.target.value as "in" | "out")}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-100 focus:outline-none focus:border-primary"
+                                >
+                                  <option value="in">Clock In</option>
+                                  <option value="out">Clock Out</option>
+                                </select>
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date & Time (Optional)</label>
+                                <input 
+                                  type="datetime-local" 
+                                  value={customTime}
+                                  onChange={(e) => setCustomTime(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-100 focus:outline-none focus:border-primary animate-none"
+                                />
+                                <span className="text-[10px] text-slate-500 block">Leave empty to log at current local time.</span>
+                              </div>
+                            </div>
+                            <DialogFooter className="gap-2">
+                              <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                              <Button type="submit" disabled={manualPunchM.isPending}>Save Entry</Button>
+                            </DialogFooter>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
