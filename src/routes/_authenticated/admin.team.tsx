@@ -229,6 +229,7 @@ function AdminTeam() {
                 <TableHead className="text-right">Today</TableHead>
                 <TableHead className="text-right">This week</TableHead>
                 <TableHead className="text-right">Last {days}d</TableHead>
+                <TableHead className="text-right">Weekly target</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
