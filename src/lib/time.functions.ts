@@ -35,7 +35,7 @@ export const getMe = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const [profileRes, rolesRes, lastRes] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, active").eq("id", userId).maybeSingle(),
+      supabase.from("profiles").select("id, full_name, email, active, weekly_target_hours").eq("id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase
         .from("time_entries")
@@ -229,7 +229,7 @@ export const getTeamEntries = createServerFn({ method: "GET" })
         .select("id, user_id, type, punched_at")
         .gte("punched_at", since)
         .order("punched_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name, email, active"),
+      supabase.from("profiles").select("id, full_name, email, active, weekly_target_hours"),
     ]);
     if (entriesRes.error) throw new Error(entriesRes.error.message);
     if (profilesRes.error) throw new Error(profilesRes.error.message);
@@ -243,7 +243,7 @@ export const listStaff = createServerFn({ method: "GET" })
     await assertAdmin(context);
     const { supabase } = context;
     const [profilesRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, active, created_at").order("created_at"),
+      supabase.from("profiles").select("id, full_name, email, active, weekly_target_hours, created_at").order("created_at"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     if (profilesRes.error) throw new Error(profilesRes.error.message);
@@ -389,4 +389,27 @@ export const createManualPunch = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
     return inserted;
+  });
+
+export const updateWeeklyTarget = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        targetUserId: z.string().uuid(),
+        weeklyTargetHours: z.number().min(0).max(168),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error } = await (supabaseAdmin as any)
+      .from("profiles")
+      .update({ weekly_target_hours: data.weeklyTargetHours })
+      .eq("id", data.targetUserId);
+
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
