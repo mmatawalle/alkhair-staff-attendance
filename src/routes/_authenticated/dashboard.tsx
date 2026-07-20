@@ -6,15 +6,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { Progress } from "@/components/ui/progress";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { QrCode, LogIn, LogOut, History, Camera } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { QrCode, LogIn, LogOut, History, Camera, Target } from "lucide-react";
+import { formatDistanceToNow, format, isSameWeek } from "date-fns";
 import { QrScannerDialog } from "@/components/qr-scanner-dialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Home,
 });
+
+function computeHours(entries: Array<{ type: string; punched_at: string }>, includeOpen = false): number {
+  const sorted = [...entries].sort(
+    (a, b) => new Date(a.punched_at).getTime() - new Date(b.punched_at).getTime(),
+  );
+  let total = 0;
+  let openIn: number | null = null;
+  for (const e of sorted) {
+    const t = new Date(e.punched_at).getTime();
+    if (e.type === "in") openIn = t;
+    else if (e.type === "out" && openIn != null) {
+      total += t - openIn;
+      openIn = null;
+    }
+  }
+  if (includeOpen && openIn != null) total += Date.now() - openIn;
+  return total / 3_600_000;
+}
 
 function Home() {
   const fetchMe = useServerFn(getMe);
@@ -25,8 +44,8 @@ function Home() {
 
   const meQ = useQuery({ queryKey: ["me"], queryFn: () => fetchMe() });
   const entriesQ = useQuery({
-    queryKey: ["my-entries", 7],
-    queryFn: () => fetchEntries({ data: { days: 7 } }),
+    queryKey: ["my-entries", 14],
+    queryFn: () => fetchEntries({ data: { days: 14 } }),
   });
 
   const [code, setCode] = useState("");
@@ -45,7 +64,7 @@ function Home() {
       toast.success(`Clocked ${res.type === "in" ? "in" : "out"} at ${format(new Date(res.punched_at), "p")}`);
       setCode("");
       qc.invalidateQueries({ queryKey: ["me"] });
-      qc.invalidateQueries({ queryKey: ["my-entries", 7] });
+      qc.invalidateQueries({ queryKey: ["my-entries", 14] });
     } catch (err: any) {
       toast.error(err.message ?? "Could not punch");
     } finally {
@@ -106,6 +125,36 @@ function Home() {
           </div>
         </CardContent>
       </Card>
+
+      {(() => {
+        const target = Number(meQ.data?.profile?.weekly_target_hours ?? 40) || 0;
+        const now = new Date();
+        const weekEntries = (entriesQ.data ?? []).filter((e) =>
+          isSameWeek(new Date(e.punched_at), now, { weekStartsOn: 1 }),
+        );
+        const hours = computeHours(weekEntries, true);
+        const pct = target > 0 ? Math.min(100, (hours / target) * 100) : 0;
+        const remaining = Math.max(0, target - hours);
+        return (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Target className="h-4 w-4 text-primary" /> This week's progress
+              </CardTitle>
+              <CardDescription>
+                {hours.toFixed(1)}h / {target.toFixed(1)}h · {pct.toFixed(0)}% complete
+                {target > 0 &&
+                  (remaining > 0
+                    ? ` · ${remaining.toFixed(1)}h remaining`
+                    : ` · target reached 🎉`)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Progress value={pct} />
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <QrScannerDialog
         open={scanOpen}

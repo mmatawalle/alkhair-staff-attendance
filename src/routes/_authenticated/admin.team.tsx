@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/admin/team")({
 });
 
 type Entry = { id: string; user_id: string; type: "in" | "out"; punched_at: string };
-type Profile = { id: string; full_name: string; email: string | null; active: boolean };
+type Profile = { id: string; full_name: string; email: string | null; active: boolean; weekly_target_hours?: number | null };
 
 function hoursFor(entries: Entry[]): number {
   const sorted = [...entries].sort(
@@ -229,6 +229,7 @@ function AdminTeam() {
                 <TableHead className="text-right">Today</TableHead>
                 <TableHead className="text-right">This week</TableHead>
                 <TableHead className="text-right">Last {days}d</TableHead>
+                <TableHead className="text-right">Weekly target</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -249,8 +250,20 @@ function AdminTeam() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">{u.today.toFixed(1)}h</TableCell>
-                  <TableCell className="text-right">{u.week.toFixed(1)}h</TableCell>
+                  <TableCell className="text-right">
+                    <div>{u.week.toFixed(1)}h / {Number(u.profile.weekly_target_hours ?? 40).toFixed(1)}h</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {(() => {
+                        const t = Number(u.profile.weekly_target_hours ?? 40);
+                        const pct = t > 0 ? Math.min(100, (u.week / t) * 100) : 0;
+                        return `${pct.toFixed(0)}%`;
+                      })()}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">{u.period.toFixed(1)}h</TableCell>
+                  <TableCell className="text-right text-xs text-muted-foreground">
+                    {Number(u.profile.weekly_target_hours ?? 40).toFixed(1)}h
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1.5">
                       {u.clockedIn ? (
