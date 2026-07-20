@@ -243,7 +243,7 @@ export const listStaff = createServerFn({ method: "GET" })
     await assertAdmin(context);
     const { supabase } = context;
     const [profilesRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, active, created_at").order("created_at"),
+      supabase.from("profiles").select("id, full_name, email, active, weekly_target_hours, created_at").order("created_at"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     if (profilesRes.error) throw new Error(profilesRes.error.message);
