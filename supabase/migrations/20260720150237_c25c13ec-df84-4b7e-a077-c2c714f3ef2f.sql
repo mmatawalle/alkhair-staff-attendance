@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN weekly_target_hours numeric NOT NULL DEFAULT 40;
