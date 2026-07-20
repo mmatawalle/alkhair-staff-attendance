@@ -126,6 +126,36 @@ function Home() {
         </CardContent>
       </Card>
 
+      {(() => {
+        const target = Number(meQ.data?.profile?.weekly_target_hours ?? 40) || 0;
+        const now = new Date();
+        const weekEntries = (entriesQ.data ?? []).filter((e) =>
+          isSameWeek(new Date(e.punched_at), now, { weekStartsOn: 1 }),
+        );
+        const hours = computeHours(weekEntries, true);
+        const pct = target > 0 ? Math.min(100, (hours / target) * 100) : 0;
+        const remaining = Math.max(0, target - hours);
+        return (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Target className="h-4 w-4 text-primary" /> This week's progress
+              </CardTitle>
+              <CardDescription>
+                {hours.toFixed(1)}h / {target.toFixed(1)}h · {pct.toFixed(0)}% complete
+                {target > 0 &&
+                  (remaining > 0
+                    ? ` · ${remaining.toFixed(1)}h remaining`
+                    : ` · target reached 🎉`)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Progress value={pct} />
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       <QrScannerDialog
         open={scanOpen}
         onOpenChange={setScanOpen}
