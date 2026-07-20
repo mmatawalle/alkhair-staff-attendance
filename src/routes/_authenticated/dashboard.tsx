@@ -6,15 +6,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { Progress } from "@/components/ui/progress";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { QrCode, LogIn, LogOut, History, Camera } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { QrCode, LogIn, LogOut, History, Camera, Target } from "lucide-react";
+import { formatDistanceToNow, format, isSameWeek } from "date-fns";
 import { QrScannerDialog } from "@/components/qr-scanner-dialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Home,
 });
+
+function computeHours(entries: Array<{ type: string; punched_at: string }>, includeOpen = false): number {
+  const sorted = [...entries].sort(
+    (a, b) => new Date(a.punched_at).getTime() - new Date(b.punched_at).getTime(),
+  );
+  let total = 0;
+  let openIn: number | null = null;
+  for (const e of sorted) {
+    const t = new Date(e.punched_at).getTime();
+    if (e.type === "in") openIn = t;
+    else if (e.type === "out" && openIn != null) {
+      total += t - openIn;
+      openIn = null;
+    }
+  }
+  if (includeOpen && openIn != null) total += Date.now() - openIn;
+  return total / 3_600_000;
+}
 
 function Home() {
   const fetchMe = useServerFn(getMe);
@@ -25,8 +44,8 @@ function Home() {
 
   const meQ = useQuery({ queryKey: ["me"], queryFn: () => fetchMe() });
   const entriesQ = useQuery({
-    queryKey: ["my-entries", 7],
-    queryFn: () => fetchEntries({ data: { days: 7 } }),
+    queryKey: ["my-entries", 14],
+    queryFn: () => fetchEntries({ data: { days: 14 } }),
   });
 
   const [code, setCode] = useState("");
