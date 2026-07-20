@@ -1,1 +1,0 @@
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS weekly_target_hours NUMERIC NOT NULL DEFAULT 40.0;

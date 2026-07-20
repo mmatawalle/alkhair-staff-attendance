@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listStaff, setAdminRole, setStaffActive, updateWeeklyTarget } from "@/lib/time.functions";
+import { listStaff, setAdminRole, setStaffActive } from "@/lib/time.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 
@@ -17,7 +16,6 @@ function AdminStaff() {
   const fetch = useServerFn(listStaff);
   const setRole = useServerFn(setAdminRole);
   const setActive = useServerFn(setStaffActive);
-  const setTarget = useServerFn(updateWeeklyTarget);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["staff"], queryFn: () => fetch() });
 
@@ -39,15 +37,6 @@ function AdminStaff() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const targetM = useMutation({
-    mutationFn: (v: { targetUserId: string; weeklyTargetHours: number }) => setTarget({ data: v }),
-    onSuccess: () => {
-      toast.success("Weekly hours target updated");
-      qc.invalidateQueries({ queryKey: ["staff"] });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Staff</h1>
@@ -61,7 +50,6 @@ function AdminStaff() {
                 <TableHead>Roles</TableHead>
                 <TableHead>Admin</TableHead>
                 <TableHead>Active</TableHead>
-                <TableHead className="w-28 text-right">Weekly Target</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -94,25 +82,6 @@ function AdminStaff() {
                           activeM.mutate({ user_id: u.id, active: v })
                         }
                       />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end items-center gap-1.5">
-                        <Input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          max="168"
-                          className="w-20 text-right h-8"
-                          defaultValue={Number(u.weekly_target_hours) || 40.0}
-                          onBlur={(e) => {
-                            const val = Number(e.target.value);
-                            if (val !== Number(u.weekly_target_hours)) {
-                              targetM.mutate({ targetUserId: u.id, weeklyTargetHours: val });
-                            }
-                          }}
-                        />
-                        <span className="text-xs text-muted-foreground">h</span>
-                      </div>
                     </TableCell>
                   </TableRow>
                 );
