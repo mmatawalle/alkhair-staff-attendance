@@ -229,7 +229,7 @@ export const getTeamEntries = createServerFn({ method: "GET" })
         .select("id, user_id, type, punched_at")
         .gte("punched_at", since)
         .order("punched_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name, email, active"),
+      supabase.from("profiles").select("id, full_name, email, active, weekly_target_hours"),
     ]);
     if (entriesRes.error) throw new Error(entriesRes.error.message);
     if (profilesRes.error) throw new Error(profilesRes.error.message);
