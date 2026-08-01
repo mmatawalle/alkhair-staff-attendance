@@ -81,6 +81,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          weekly_target_hours: number
         }
         Insert: {
           active?: boolean
@@ -88,6 +89,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id: string
+          weekly_target_hours?: number
         }
         Update: {
           active?: boolean
@@ -95,6 +97,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          weekly_target_hours?: number
         }
         Relationships: []
       }
