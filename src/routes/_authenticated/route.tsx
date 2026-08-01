@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/time.functions";
 import { Button } from "@/components/ui/button";
-import { Clock, QrCode, Users, LogOut, History, Monitor, UserCog, Sun, Moon } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Clock, QrCode, Users, LogOut, History, Monitor, UserCog, Sun, Moon, Menu } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
