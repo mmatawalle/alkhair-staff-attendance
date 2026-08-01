@@ -246,9 +246,14 @@ export function PushNotificationsButton() {
                     : "Permission is granted. Finishing device registration — if you don't get alerts, reload this page once."}
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={runTest} disabled={testing}>
+                  {testing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <BellRing className="h-4 w-4 mr-1.5" />}
+                  Send test notification
+                </Button>
                 <Button onClick={() => setOpen(false)}>Done</Button>
               </DialogFooter>
+
             </>
           )}
 
