@@ -136,27 +136,24 @@ function RootComponent() {
     if (typeof window !== "undefined") {
       const appId = import.meta.env.VITE_ONESIGNAL_APP_ID;
       if (appId) {
-        const initOneSignal = () => {
-          const OneSignal = (window as any).OneSignal || [];
-          OneSignal.push(() => {
-            OneSignal.init({
-              appId: appId,
-              allowLocalhostAsSecureOrigin: true,
-              notifyButton: {
-                enable: false,
-              },
-            });
+        // Initialize the Deferred queue
+        const OneSignalDeferred = ((window as any).OneSignalDeferred = (window as any).OneSignalDeferred || []);
+        OneSignalDeferred.push(async (OneSignal: any) => {
+          await OneSignal.init({
+            appId: appId,
+            allowLocalhostAsSecureOrigin: true,
+            notifyButton: {
+              enable: false,
+            },
           });
-        };
+        });
 
-        if (!(window as any).OneSignal) {
+        // Load the OneSignal SDK script if not already present
+        if (!document.querySelector('script[src*="OneSignalSDK.page.js"]')) {
           const script = document.createElement("script");
           script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
           script.defer = true;
-          script.onload = initOneSignal;
           document.head.appendChild(script);
-        } else {
-          initOneSignal();
         }
       }
     }

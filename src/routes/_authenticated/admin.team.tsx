@@ -87,7 +87,7 @@ export const Route = createFileRoute("/_authenticated/admin/team")({
 });
 
 type Entry = { id: string; user_id: string; type: "in" | "out"; punched_at: string };
-type Profile = { id: string; full_name: string; email: string | null; active: boolean; weekly_target_hours?: number | null };
+type Profile = { id: string; full_name: string; email: string | null; active: boolean };
 
 function hoursFor(entries: Entry[]): number {
   const sorted = [...entries].sort(
@@ -525,7 +525,9 @@ function AdminTeam() {
   };
 
   const setTab = (newTab: string) => {
-    navigate({ search: ((prev: any) => ({ ...prev, tab: newTab })) as any });
+    navigate({
+      search: (prev: any) => ({ ...prev, tab: newTab }),
+    });
   };
 
   const [subscribed, setSubscribed] = useState(false);
@@ -533,37 +535,35 @@ function AdminTeam() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const OneSignal = (window as any).OneSignal;
-      if (OneSignal) {
+      const OneSignalDeferred = ((window as any).OneSignalDeferred = (window as any).OneSignalDeferred || []);
+      OneSignalDeferred.push((OneSignal: any) => {
         setCanSubscribe(true);
-        OneSignal.push(() => {
-          const checkStatus = () => {
-            const pushSub = OneSignal.User?.pushSubscription;
-            if (pushSub) {
-              setSubscribed(pushSub.optedIn);
-              pushSub.addEventListener("change", (event: any) => {
-                setSubscribed(event.current.optedIn);
-              });
-              return true;
-            }
-            return false;
-          };
-
-          if (!checkStatus()) {
-            const interval = setInterval(() => {
-              if (checkStatus()) clearInterval(interval);
-            }, 500);
-            return () => clearInterval(interval);
+        const checkStatus = () => {
+          const pushSub = OneSignal.User?.pushSubscription;
+          if (pushSub) {
+            setSubscribed(pushSub.optedIn);
+            pushSub.addEventListener("change", (event: any) => {
+              setSubscribed(event.current.optedIn);
+            });
+            return true;
           }
-        });
-      }
+          return false;
+        };
+
+        if (!checkStatus()) {
+          const interval = setInterval(() => {
+            if (checkStatus()) clearInterval(interval);
+          }, 500);
+          return () => clearInterval(interval);
+        }
+      });
     }
   }, []);
 
   const handleSubscribe = () => {
-    const OneSignal = (window as any).OneSignal;
-    if (OneSignal) {
-      OneSignal.push(() => {
+    if (typeof window !== "undefined") {
+      const OneSignalDeferred = ((window as any).OneSignalDeferred = (window as any).OneSignalDeferred || []);
+      OneSignalDeferred.push((OneSignal: any) => {
         if (OneSignal.Notifications?.requestPermission) {
           OneSignal.Notifications.requestPermission().then(() => {
             OneSignal.User?.pushSubscription?.optIn?.();
