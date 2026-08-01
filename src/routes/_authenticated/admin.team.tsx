@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate, useSearch, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { PushNotificationsButton } from "@/components/push-notifications-dialog";
+
 import {
   getMe,
   getTeamEntries,
@@ -530,48 +532,8 @@ function AdminTeam() {
     });
   };
 
-  const [subscribed, setSubscribed] = useState(false);
-  const [canSubscribe, setCanSubscribe] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const OneSignalDeferred = ((window as any).OneSignalDeferred = (window as any).OneSignalDeferred || []);
-      OneSignalDeferred.push((OneSignal: any) => {
-        setCanSubscribe(true);
-        const checkStatus = () => {
-          const pushSub = OneSignal.User?.pushSubscription;
-          if (pushSub) {
-            setSubscribed(pushSub.optedIn);
-            pushSub.addEventListener("change", (event: any) => {
-              setSubscribed(event.current.optedIn);
-            });
-            return true;
-          }
-          return false;
-        };
 
-        if (!checkStatus()) {
-          const interval = setInterval(() => {
-            if (checkStatus()) clearInterval(interval);
-          }, 500);
-          return () => clearInterval(interval);
-        }
-      });
-    }
-  }, []);
-
-  const handleSubscribe = () => {
-    if (typeof window !== "undefined") {
-      const OneSignalDeferred = ((window as any).OneSignalDeferred = (window as any).OneSignalDeferred || []);
-      OneSignalDeferred.push((OneSignal: any) => {
-        if (OneSignal.Notifications?.requestPermission) {
-          OneSignal.Notifications.requestPermission().then(() => {
-            OneSignal.User?.pushSubscription?.optIn?.();
-          });
-        }
-      });
-    }
-  };
 
   // Chart configuration labels
   const areaChartConfig = {
@@ -599,18 +561,8 @@ function AdminTeam() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {canSubscribe && (
-            <button
-              onClick={handleSubscribe}
-              className={`text-xs px-3 py-1.5 rounded-full border flex items-center gap-1.5 font-medium transition-all ${
-                subscribed
-                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                  : "bg-sky-500/10 text-sky-500 border-sky-500/20 hover:bg-sky-500/20"
-              }`}
-            >
-              <span>🔔</span> {subscribed ? "Subscribed to phone notifications" : "Enable phone notifications"}
-            </button>
-          )}
+          <PushNotificationsButton />
+
           <Button variant="outline" size="sm" asChild>
             <Link to="/dashboard" search={{ view: "employee" }}>
               <Clock className="h-4 w-4 mr-1.5" /> Clock Page
