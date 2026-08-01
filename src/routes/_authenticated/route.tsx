@@ -40,6 +40,7 @@ function AuthLayout() {
   }, [loading, user, navigate]);
 
   const [signingOut, setSigningOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const signOut = async () => {
     setSigningOut(true);
     await supabase.auth.signOut();
