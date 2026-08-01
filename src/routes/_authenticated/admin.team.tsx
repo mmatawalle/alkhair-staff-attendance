@@ -87,7 +87,7 @@ export const Route = createFileRoute("/_authenticated/admin/team")({
 });
 
 type Entry = { id: string; user_id: string; type: "in" | "out"; punched_at: string };
-type Profile = { id: string; full_name: string; email: string | null; active: boolean };
+type Profile = { id: string; full_name: string; email: string | null; active: boolean; weekly_target_hours?: number | null };
 
 function hoursFor(entries: Entry[]): number {
   const sorted = [...entries].sort(
@@ -525,9 +525,7 @@ function AdminTeam() {
   };
 
   const setTab = (newTab: string) => {
-    navigate({
-      search: (prev: any) => ({ ...prev, tab: newTab }),
-    });
+    navigate({ search: ((prev: any) => ({ ...prev, tab: newTab })) as any });
   };
 
   const [subscribed, setSubscribed] = useState(false);
