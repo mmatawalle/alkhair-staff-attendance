@@ -204,18 +204,19 @@ function Home() {
           ) : (
             <ul className="divide-y">
               {entriesQ.data!.slice(0, 10).map((e) => (
-                <li key={e.id} className="py-2 flex items-center justify-between">
-                  <span className="flex items-center gap-2">
+                <li key={e.id} className="py-2.5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <span className="flex min-w-0 items-center gap-2">
                     {e.type === "in" ? (
-                      <LogIn className="h-4 w-4 text-emerald-600" />
+                      <LogIn className="h-4 w-4 shrink-0 text-emerald-600" />
                     ) : (
-                      <LogOut className="h-4 w-4 text-amber-600" />
+                      <LogOut className="h-4 w-4 shrink-0 text-amber-600" />
                     )}
-                    <span className="capitalize">{e.type}</span>
+                    <span className="capitalize truncate">{e.type}</span>
                   </span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="shrink-0 text-xs sm:text-sm text-muted-foreground text-right">
                     {format(new Date(e.punched_at), "EEE, MMM d • p")}
                   </span>
+                </li>
                 </li>
               ))}
             </ul>
