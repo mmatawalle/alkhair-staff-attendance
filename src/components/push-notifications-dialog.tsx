@@ -176,8 +176,8 @@ export function PushNotificationsButton() {
       setErrorMsg(e?.message ?? "Something went wrong while enabling notifications.");
       setStage("error");
     }
+  }, [ready, saveDevice]);
 
-  }, [ready]);
 
   const openInNewTab = () => {
     window.open(window.location.href, "_blank", "noopener,noreferrer");
