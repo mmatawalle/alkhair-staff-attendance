@@ -639,15 +639,15 @@ function AdminTeam() {
               </CardContent>
             </Card>
 
-            <Card className="bg-primary/5 border-primary/20">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-primary">
+            <Card className="bg-primary/5 border-primary/20 min-w-0">
+              <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2 space-y-0">
+                <CardTitle className="min-w-0 text-xs font-semibold uppercase tracking-wider text-primary">
                   Today's QR Code
                 </CardTitle>
-                <Clock className="h-4 w-4 text-primary animate-pulse" />
+                <Clock className="h-4 w-4 shrink-0 text-primary animate-pulse" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-mono font-bold text-primary select-all">
+              <CardContent className="min-w-0">
+                <div className="text-base sm:text-xl font-mono font-bold text-primary select-all break-all leading-tight">
                   {token || "---"}
                 </div>
                 <p className="text-[10px] text-primary/70 mt-1 flex items-center gap-1">
