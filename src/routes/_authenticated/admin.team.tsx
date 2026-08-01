@@ -551,50 +551,53 @@ function AdminTeam() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Bar */}
-      <div className="flex items-center justify-between flex-wrap gap-4 border-b pb-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Admin Control Center</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+      <div className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl font-extrabold tracking-tight sm:text-3xl">Admin Control Center</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">
             Consolidated operational dashboard for Alkhair attendance telemetry.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <PushNotificationsButton />
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <div className="col-span-2 sm:col-auto [&>button]:w-full sm:[&>button]:w-auto">
+            <PushNotificationsButton />
+          </div>
 
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="h-10 sm:h-9" asChild>
             <Link to="/dashboard" search={{ view: "employee" }}>
               <Clock className="h-4 w-4 mr-1.5" /> Clock Page
             </Link>
           </Button>
-          <Button variant="outline" size="sm" onClick={exportCSV}>
+          <Button variant="outline" size="sm" className="h-10 sm:h-9" onClick={exportCSV}>
             <Download className="h-4 w-4 mr-1.5" /> Export Logs
           </Button>
         </div>
       </div>
 
       {/* Tabs Layout Navigation */}
-      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg bg-card border rounded-lg p-1">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg bg-card border rounded-lg p-1 h-auto">
+          <TabsTrigger value="overview" className="flex flex-col gap-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:text-sm">
             <Activity className="h-4 w-4" /> Overview
           </TabsTrigger>
-          <TabsTrigger value="staff" className="flex items-center gap-2">
-            <Users className="h-4 w-4" /> Staff Management
+          <TabsTrigger value="staff" className="flex flex-col gap-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:text-sm">
+            <Users className="h-4 w-4" /> <span className="sm:hidden">Staff</span><span className="hidden sm:inline">Staff Management</span>
           </TabsTrigger>
-          <TabsTrigger value="kiosk" className="flex items-center gap-2">
-            <Monitor className="h-4 w-4" /> Kiosk Setup
+          <TabsTrigger value="kiosk" className="flex flex-col gap-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:text-sm">
+            <Monitor className="h-4 w-4" /> <span className="sm:hidden">Kiosk</span><span className="hidden sm:inline">Kiosk Setup</span>
           </TabsTrigger>
         </TabsList>
 
         {/* ======================================================== */}
         {/* TAB 1: OVERVIEW & ANALYTICS                             */}
         {/* ======================================================== */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
           {/* KPI Dashboard Metrics Cards */}
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+
+            <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Present Today
@@ -610,7 +613,7 @@ function AdminTeam() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Total Active Staff
@@ -623,7 +626,7 @@ function AdminTeam() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Team Hours (Week)
@@ -636,15 +639,15 @@ function AdminTeam() {
               </CardContent>
             </Card>
 
-            <Card className="bg-primary/5 border-primary/20">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-primary">
+            <Card className="bg-primary/5 border-primary/20 min-w-0">
+              <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2 space-y-0">
+                <CardTitle className="min-w-0 text-xs font-semibold uppercase tracking-wider text-primary">
                   Today's QR Code
                 </CardTitle>
-                <Clock className="h-4 w-4 text-primary animate-pulse" />
+                <Clock className="h-4 w-4 shrink-0 text-primary animate-pulse" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-mono font-bold text-primary select-all">
+              <CardContent className="min-w-0">
+                <div className="text-base sm:text-xl font-mono font-bold text-primary select-all break-all leading-tight">
                   {token || "---"}
                 </div>
                 <p className="text-[10px] text-primary/70 mt-1 flex items-center gap-1">
@@ -655,16 +658,17 @@ function AdminTeam() {
           </div>
 
           {/* Charts Row */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2 pb-4">
-                <div>
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+            <Card className="min-w-0 overflow-hidden">
+              <CardHeader className="flex flex-col items-start gap-2 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <CardTitle className="text-base flex items-center gap-1">
                     <TrendingUp className="h-4 w-4 text-primary" /> Daily Attendance Hours
                   </CardTitle>
                   <CardDescription>Total hours worked across the whole team</CardDescription>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 shrink-0">
+
                   {[7, 14, 30].map((d) => (
                     <Button
                       key={d}
@@ -710,7 +714,7 @@ function AdminTeam() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="min-w-0 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-1">
                   <Users className="h-4 w-4 text-primary" /> Workload comparison
@@ -844,9 +848,10 @@ function AdminTeam() {
           <Card className="mt-6">
             <CardHeader>
               <CardTitle className="text-base">Hours by employee</CardTitle>
+              <CardDescription className="md:hidden">Swipe the table sideways to see all columns.</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <Table>
+            <CardContent className="px-0 sm:px-6 overflow-x-auto">
+              <Table className="min-w-[760px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
@@ -953,36 +958,39 @@ function AdminTeam() {
             </CardHeader>
 
             {/* Filter Toolbar */}
-            <div className="p-6 pb-2 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between border-b bg-muted/10">
-              <div className="relative w-full max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="p-4 pb-3 sm:p-6 sm:pb-2 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between border-b bg-muted/10">
+              <div className="relative w-full md:max-w-sm">
+                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name or email..."
-                  className="pl-8"
+                  className="pl-8 h-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
 
-              <div className="flex gap-1.5 flex-wrap">
-                {[
-                  { id: "all", label: "Active Employees" },
-                  { id: "in", label: "Clocked In" },
-                  { id: "out", label: "Clocked Out" },
-                  { id: "inactive", label: "Inactive Accounts" },
-                ].map((f) => (
-                  <Button
-                    key={f.id}
-                    variant={statusFilter === f.id ? "default" : "outline"}
-                    size="sm"
-                    className="h-8 text-xs px-3"
-                    onClick={() => setStatusFilter(f.id as any)}
-                  >
-                    {f.label}
-                  </Button>
-                ))}
+              <div className="-mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto">
+                <div className="flex gap-1.5 w-max md:w-auto md:flex-wrap">
+                  {[
+                    { id: "all", label: "Active Employees" },
+                    { id: "in", label: "Clocked In" },
+                    { id: "out", label: "Clocked Out" },
+                    { id: "inactive", label: "Inactive Accounts" },
+                  ].map((f) => (
+                    <Button
+                      key={f.id}
+                      variant={statusFilter === f.id ? "default" : "outline"}
+                      size="sm"
+                      className="h-9 text-xs px-3 shrink-0"
+                      onClick={() => setStatusFilter(f.id as any)}
+                    >
+                      {f.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
+
 
             <CardContent className="p-0 overflow-x-auto">
               {staffQ.isLoading ? (
@@ -990,7 +998,7 @@ function AdminTeam() {
               ) : filteredStaff.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">No employees found.</div>
               ) : (
-                <Table>
+                <Table className="min-w-[900px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Employee Details</TableHead>
@@ -1190,12 +1198,12 @@ function AdminTeam() {
         {/* ======================================================== */}
         {/* TAB 3: KIOSK SETUP & CODE SETTINGS                       */}
         {/* ======================================================== */}
-        <TabsContent value="kiosk" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
+        <TabsContent value="kiosk" className="space-y-4 sm:space-y-6">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
             {/* Live Rotating QR Display */}
             <Card className="md:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4 border-b pb-4">
-                <div>
+              <CardHeader className="flex flex-col items-start gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0">
                   <CardTitle className="text-base">Shop Attendance display</CardTitle>
                   <CardDescription>
                     This code rotates automatically to prevent off-site scan fraud.
@@ -1204,24 +1212,25 @@ function AdminTeam() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="w-full h-10 sm:w-auto sm:h-9"
                   onClick={() => regenM.mutate()}
                   disabled={regenM.isPending}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" /> Force rotate code
                 </Button>
               </CardHeader>
-              <CardContent className="flex flex-col items-center gap-4 py-8">
+              <CardContent className="flex flex-col items-center gap-4 py-6 sm:py-8">
                 {qrDataUrl ? (
-                  <div className="border bg-card p-4 rounded-xl shadow-inner max-w-sm w-full flex items-center justify-center">
-                    <img src={qrDataUrl} alt="Today's QR code" className="w-56 h-56 md:w-72 md:h-72" />
+                  <div className="border bg-card p-3 sm:p-4 rounded-xl shadow-inner max-w-sm w-full flex items-center justify-center">
+                    <img src={qrDataUrl} alt="Today's QR code" className="w-full max-w-[260px] aspect-square md:w-72 md:h-72" />
                   </div>
                 ) : (
-                  <div className="w-56 h-56 md:w-72 md:h-72 bg-muted animate-pulse rounded-xl" />
+                  <div className="w-full max-w-[260px] aspect-square md:w-72 md:h-72 bg-muted animate-pulse rounded-xl" />
                 )}
                 {token && (
                   <div className="text-center space-y-1">
                     <p className="text-xs uppercase tracking-widest text-muted-foreground">Today's Token</p>
-                    <p className="text-4xl font-mono font-bold tracking-widest text-primary select-all">
+                    <p className="text-3xl sm:text-4xl font-mono font-bold tracking-widest text-primary select-all break-all">
                       {token}
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">

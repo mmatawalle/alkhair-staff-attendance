@@ -116,12 +116,12 @@ function Home() {
   }, [meQ.data, entriesQ.data]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Hi, {meQ.data?.profile?.full_name || "there"}</span>
-            <Badge variant={isClockedIn ? "default" : "secondary"}>
+        <CardHeader className="pb-4">
+          <CardTitle className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-lg sm:text-xl">
+            <span className="truncate">Hi, {meQ.data?.profile?.full_name || "there"}</span>
+            <Badge variant={isClockedIn ? "default" : "secondary"} className="shrink-0">
               {isClockedIn ? "Clocked in" : "Clocked out"}
             </Badge>
           </CardTitle>
@@ -132,28 +132,37 @@ function Home() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg border bg-muted/30 p-4 text-center space-y-3">
+          <div className="rounded-lg border bg-muted/30 p-4 sm:p-5 text-center space-y-3">
             <QrCode className="h-10 w-10 mx-auto text-primary" />
             <p className="text-sm text-muted-foreground">
               Scan the shop's QR code, or enter today's code below.
             </p>
             <Button
               variant="secondary"
-              className="mx-auto"
+              size="lg"
+              className="w-full sm:w-auto sm:mx-auto h-12 text-base"
               onClick={() => setScanOpen(true)}
             >
-              <Camera className="h-4 w-4 mr-1" /> Scan QR with camera
+              <Camera className="h-5 w-5 mr-2" /> Scan QR with camera
             </Button>
-            <div className="flex gap-2 max-w-sm mx-auto">
+            <div className="flex flex-col sm:flex-row gap-2 max-w-sm mx-auto">
               <Input
                 placeholder="Today's code"
+                inputMode="text"
+                autoCapitalize="characters"
+                className="h-12 text-center text-base tracking-widest sm:text-left sm:tracking-normal"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") doPunch(code);
                 }}
               />
-              <Button onClick={() => doPunch(code)} disabled={busy || !code.trim()}>
+              <Button
+                size="lg"
+                className="h-12 w-full sm:w-auto text-base"
+                onClick={() => doPunch(code)}
+                disabled={busy || !code.trim()}
+              >
                 {isClockedIn ? (
                   <>
                     <LogOut className="h-4 w-4 mr-1" /> Clock out
@@ -168,6 +177,7 @@ function Home() {
           </div>
         </CardContent>
       </Card>
+
 
       {progressCard}
 
@@ -194,16 +204,16 @@ function Home() {
           ) : (
             <ul className="divide-y">
               {entriesQ.data!.slice(0, 10).map((e) => (
-                <li key={e.id} className="py-2 flex items-center justify-between">
-                  <span className="flex items-center gap-2">
+                <li key={e.id} className="py-2.5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <span className="flex min-w-0 items-center gap-2">
                     {e.type === "in" ? (
-                      <LogIn className="h-4 w-4 text-emerald-600" />
+                      <LogIn className="h-4 w-4 shrink-0 text-emerald-600" />
                     ) : (
-                      <LogOut className="h-4 w-4 text-amber-600" />
+                      <LogOut className="h-4 w-4 shrink-0 text-amber-600" />
                     )}
-                    <span className="capitalize">{e.type}</span>
+                    <span className="capitalize truncate">{e.type}</span>
                   </span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="shrink-0 text-xs sm:text-sm text-muted-foreground text-right">
                     {format(new Date(e.punched_at), "EEE, MMM d • p")}
                   </span>
                 </li>
