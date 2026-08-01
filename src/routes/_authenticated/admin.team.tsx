@@ -1197,12 +1197,12 @@ function AdminTeam() {
         {/* ======================================================== */}
         {/* TAB 3: KIOSK SETUP & CODE SETTINGS                       */}
         {/* ======================================================== */}
-        <TabsContent value="kiosk" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
+        <TabsContent value="kiosk" className="space-y-4 sm:space-y-6">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
             {/* Live Rotating QR Display */}
             <Card className="md:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4 border-b pb-4">
-                <div>
+              <CardHeader className="flex flex-col items-start gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0">
                   <CardTitle className="text-base">Shop Attendance display</CardTitle>
                   <CardDescription>
                     This code rotates automatically to prevent off-site scan fraud.
@@ -1211,24 +1211,25 @@ function AdminTeam() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="w-full h-10 sm:w-auto sm:h-9"
                   onClick={() => regenM.mutate()}
                   disabled={regenM.isPending}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" /> Force rotate code
                 </Button>
               </CardHeader>
-              <CardContent className="flex flex-col items-center gap-4 py-8">
+              <CardContent className="flex flex-col items-center gap-4 py-6 sm:py-8">
                 {qrDataUrl ? (
-                  <div className="border bg-card p-4 rounded-xl shadow-inner max-w-sm w-full flex items-center justify-center">
-                    <img src={qrDataUrl} alt="Today's QR code" className="w-56 h-56 md:w-72 md:h-72" />
+                  <div className="border bg-card p-3 sm:p-4 rounded-xl shadow-inner max-w-sm w-full flex items-center justify-center">
+                    <img src={qrDataUrl} alt="Today's QR code" className="w-full max-w-[260px] aspect-square md:w-72 md:h-72" />
                   </div>
                 ) : (
-                  <div className="w-56 h-56 md:w-72 md:h-72 bg-muted animate-pulse rounded-xl" />
+                  <div className="w-full max-w-[260px] aspect-square md:w-72 md:h-72 bg-muted animate-pulse rounded-xl" />
                 )}
                 {token && (
                   <div className="text-center space-y-1">
                     <p className="text-xs uppercase tracking-widest text-muted-foreground">Today's Token</p>
-                    <p className="text-4xl font-mono font-bold tracking-widest text-primary select-all">
+                    <p className="text-3xl sm:text-4xl font-mono font-bold tracking-widest text-primary select-all break-all">
                       {token}
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
