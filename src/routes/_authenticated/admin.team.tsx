@@ -993,7 +993,7 @@ function AdminTeam() {
               ) : filteredStaff.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">No employees found.</div>
               ) : (
-                <Table>
+                <Table className="min-w-[900px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Employee Details</TableHead>
