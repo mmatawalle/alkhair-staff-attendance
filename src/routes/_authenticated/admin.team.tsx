@@ -956,36 +956,39 @@ function AdminTeam() {
             </CardHeader>
 
             {/* Filter Toolbar */}
-            <div className="p-6 pb-2 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between border-b bg-muted/10">
-              <div className="relative w-full max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="p-4 pb-3 sm:p-6 sm:pb-2 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between border-b bg-muted/10">
+              <div className="relative w-full md:max-w-sm">
+                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name or email..."
-                  className="pl-8"
+                  className="pl-8 h-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
 
-              <div className="flex gap-1.5 flex-wrap">
-                {[
-                  { id: "all", label: "Active Employees" },
-                  { id: "in", label: "Clocked In" },
-                  { id: "out", label: "Clocked Out" },
-                  { id: "inactive", label: "Inactive Accounts" },
-                ].map((f) => (
-                  <Button
-                    key={f.id}
-                    variant={statusFilter === f.id ? "default" : "outline"}
-                    size="sm"
-                    className="h-8 text-xs px-3"
-                    onClick={() => setStatusFilter(f.id as any)}
-                  >
-                    {f.label}
-                  </Button>
-                ))}
+              <div className="-mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto">
+                <div className="flex gap-1.5 w-max md:w-auto md:flex-wrap">
+                  {[
+                    { id: "all", label: "Active Employees" },
+                    { id: "in", label: "Clocked In" },
+                    { id: "out", label: "Clocked Out" },
+                    { id: "inactive", label: "Inactive Accounts" },
+                  ].map((f) => (
+                    <Button
+                      key={f.id}
+                      variant={statusFilter === f.id ? "default" : "outline"}
+                      size="sm"
+                      className="h-9 text-xs px-3 shrink-0"
+                      onClick={() => setStatusFilter(f.id as any)}
+                    >
+                      {f.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
+
 
             <CardContent className="p-0 overflow-x-auto">
               {staffQ.isLoading ? (
