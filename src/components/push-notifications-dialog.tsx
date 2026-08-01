@@ -146,21 +146,29 @@ export function PushNotificationsButton() {
         setStage("error");
         return;
       }
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("Timed out while registering this device.")), 15000);
+      const subscriptionId = await new Promise<string>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Timed out while registering this device.")), 20000);
         withOneSignal(async (OneSignal: any) => {
           try {
             await OneSignal.Notifications?.requestPermission?.();
             const sub = OneSignal.User?.PushSubscription ?? OneSignal.User?.pushSubscription;
             await sub?.optIn?.();
+            // The subscription id can take a moment to be assigned.
+            let id: string | undefined = sub?.id;
+            for (let i = 0; i < 20 && !id; i++) {
+              await new Promise((r) => setTimeout(r, 500));
+              id = sub?.id;
+            }
             clearTimeout(timeout);
-            resolve();
+            if (!id) reject(new Error("This device didn't get a push subscription id. Reload and try again."));
+            else resolve(id);
           } catch (e: any) {
             clearTimeout(timeout);
             reject(e);
           }
         });
       });
+      await saveDevice(subscriptionId);
       setSubscribed(true);
       setStage("granted");
       toast.success("Phone notifications enabled on this device.");
@@ -168,6 +176,7 @@ export function PushNotificationsButton() {
       setErrorMsg(e?.message ?? "Something went wrong while enabling notifications.");
       setStage("error");
     }
+
   }, [ready]);
 
   const openInNewTab = () => {
