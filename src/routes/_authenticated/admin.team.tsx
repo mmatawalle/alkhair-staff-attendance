@@ -847,6 +847,7 @@ function AdminTeam() {
           <Card className="mt-6">
             <CardHeader>
               <CardTitle className="text-base">Hours by employee</CardTitle>
+              <CardDescription className="md:hidden">Swipe the table sideways to see all columns.</CardDescription>
             </CardHeader>
             <CardContent className="px-0 sm:px-6 overflow-x-auto">
               <Table className="min-w-[760px]">
