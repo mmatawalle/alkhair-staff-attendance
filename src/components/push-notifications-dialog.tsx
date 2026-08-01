@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Bell, BellOff, BellRing, CheckCircle2, ExternalLink, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { registerPushDevice, sendTestPush } from "@/lib/time.functions";
 
 type Stage = "intro" | "requesting" | "granted" | "denied" | "blocked-iframe" | "unsupported" | "error";
 
@@ -32,6 +34,45 @@ export function PushNotificationsButton() {
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [subscribed, setSubscribed] = useState(false);
   const [ready, setReady] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const registerDevice = useServerFn(registerPushDevice);
+  const testPush = useServerFn(sendTestPush);
+  const registeredRef = useRef<string | null>(null);
+
+  // Save this device's OneSignal subscription id so the server can target admins.
+  const saveDevice = useCallback(
+    async (subscriptionId?: string | null) => {
+      if (!subscriptionId || registeredRef.current === subscriptionId) return;
+      registeredRef.current = subscriptionId;
+      try {
+        await registerDevice({
+          data: { subscriptionId, userAgent: navigator.userAgent.slice(0, 500) },
+        });
+      } catch (e: any) {
+        registeredRef.current = null;
+        console.error("Failed to register push device", e);
+        throw e;
+      }
+    },
+    [registerDevice],
+  );
+
+  const runTest = useCallback(async () => {
+    setTesting(true);
+    try {
+      const res: any = await testPush({ data: {} });
+      if (res?.sent) {
+        toast.success(`Test notification sent to ${res.recipients} device(s).`);
+      } else {
+        toast.error(res?.error ?? "Could not send the test notification.");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not send the test notification.");
+    } finally {
+      setTesting(false);
+    }
+  }, [testPush]);
+
 
   // Track subscription state from the OneSignal SDK
   useEffect(() => {
