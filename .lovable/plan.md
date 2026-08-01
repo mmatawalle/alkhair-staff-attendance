@@ -1,51 +1,29 @@
+## What's happening
 
-## Goal
+The "Thank you for subscribing" message is OneSignal's built-in **Welcome Notification** — it's sent automatically by OneSignal, not by your app. Seeing it means your device is registered correctly. Good news.
 
-Give the shop one browser tab that always displays a fresh QR/code, so nobody prints anything and no admin has to sign in each morning. Employees scan with their phone, tap **Confirm**, and are clocked in/out.
+The clock-in/out alerts are sent by your app's own code (in the punch handler), and nothing needs to be configured in the OneSignal dashboard for them. But that code has two bugs:
 
-## How it will work day-to-day
+### Bug 1: the send is cancelled before it leaves the server
+The punch handler fires the OneSignal request without waiting for it, then immediately returns the punch result. Your backend runs in a serverless environment that shuts the request down as soon as the response is sent — so the notification request is killed mid-flight. This is why the punch succeeds but no alert arrives.
 
-1. Admin signs in once at `/kiosk/setup` on the shop computer and taps **Pair this device**.
-2. That browser stores a long-lived kiosk token and redirects to `/kiosk`, which stays open full-screen.
-3. `/kiosk` shows today's QR + big manual code. Every ~3 minutes the code rotates automatically; the page refreshes to display the new one. No login prompts.
-4. An employee scans the QR on their phone → lands on `/clock?code=…` (must be signed in) → sees "Clock IN" / "Clock OUT" button → taps once → confirmation screen.
-5. Admin can revoke the paired kiosk anytime from `/admin/staff` (new "Kiosk devices" section) — e.g. if the shop PC is lost.
+### Bug 2: it would notify everyone, not just admins
+The send targets the "Subscribed Users" segment, i.e. every registered device — so employees would get alerts about each other's punches, and admins get nothing special.
 
-## What changes
+## The fix
 
-### Database
-- New table `kiosk_devices` — id, label (e.g. "Front counter PC"), token (random, unique, indexed), created_by, revoked_at.
-  - RLS: admins manage rows; the paired token is used only by an unauthenticated server route (validated server-side), so no anon SELECT.
-- `daily_codes` gains `expires_at` (timestamptz) so a code can be valid for a short window instead of the whole day. Existing "one code per day" logic is replaced by "current active code = most recent non-revoked, non-expired code". The `valid_date` column stays for reporting.
+1. **Await the notification send** inside the punch handler (with a short timeout and error logging) so it actually completes before the response returns. A punch must still succeed even if the push fails.
 
-### Server functions / routes
-- `pairKioskDevice` (admin only): creates a `kiosk_devices` row, returns the token once. Called by `/kiosk/setup`.
-- `revokeKioskDevice` (admin only).
-- `listKioskDevices` (admin only).
-- New public server route `GET /api/public/kiosk/current-code?token=…`:
-  - Validates the kiosk token against `kiosk_devices` (not revoked).
-  - Returns `{ token, expiresAt }` for the current active `daily_codes` row.
-  - If none exists or the latest one is expired, it rotates: inserts a new row with `expires_at = now() + rotation window` and returns that.
-  - This is the ONLY endpoint the kiosk page needs — it works without a Supabase login on the shop PC.
-- The employee-facing `punchWithCode` server fn already validates the code; it will additionally reject expired/revoked codes.
+2. **Target admins only.** When a device subscribes, tag it with the signed-in user's ID and role via the OneSignal SDK (external ID + a `role` tag). The punch handler then sends using a filter on `role = admin` instead of the blanket segment.
 
-### Pages
-- `/kiosk/setup` (admin, authenticated): "Pair this device" button, optional label input. On success writes the token into `localStorage` under `kiosk_token` and redirects to `/kiosk`.
-- `/kiosk` (PUBLIC route, no auth): reads `kiosk_token` from `localStorage`; if missing, tells the user to visit `/kiosk/setup`. Polls the public endpoint above every 20s, renders the QR + manual code, shows a small countdown "New code in 2:14". Full-screen friendly.
-- `/clock?code=…` (existing, authenticated): change from auto-punch to a two-step **Confirm Clock IN / Clock OUT** button, then confirmation state.
-- `/admin/staff`: add a "Kiosk devices" panel listing paired devices with a Revoke button. The old printable `/admin/display` page stays as a fallback but is no longer the primary flow.
+3. **Store subscriptions in the database** as the reliable source of truth: a small `push_devices` table (user_id, onesignal subscription id) written when a device opts in. The punch handler looks up admin user IDs and targets those specific external IDs. This avoids relying on tags being in sync.
 
-### Rotation
-- Rotation window: 3 minutes (configurable constant). Kiosk polls every 20s; when it sees a new token it re-renders the QR.
-- No cron job needed — rotation happens lazily inside the public endpoint whenever the current code has expired. This keeps things simple and avoids server-side scheduling.
+4. **Add a "Send test notification" button** on the Team page so you can verify delivery end-to-end without waiting for a real punch, plus surface the send result (success / error reason) instead of failing silently.
 
-### Security notes
-- The kiosk token grants only "read the current punch code"; it cannot punch, read entries, or see any user data.
-- Employees still must be signed in on their own phone to actually punch — the QR alone is worthless without an account.
-- Rotating the QR every few minutes means a photograph taken at 9am is unusable by 9:05am, so remote/off-shift punching is prevented in practice.
-- Admin can revoke a kiosk instantly; the public endpoint will reject the old token on the next 20s poll.
+5. **Log every send attempt** server-side so failures are diagnosable.
 
-## Out of scope for this change
-- Geolocation / IP restrictions.
-- Multiple simultaneous shop locations (the model supports it, but no UI to filter by location yet).
-- Native fullscreen / screensaver behaviour on the shop OS — that's a browser setting.
+## Notes
+
+- Push only works on your **published HTTPS site** opened in a real browser tab — not inside the editor preview. On iPhone, the site must be added to the Home Screen first.
+- Your published domain must be listed as the Site URL in the OneSignal app config (already the case if the subscribe confirmation arrived).
+- Optional: I can turn off OneSignal's Welcome Notification if you don't want staff seeing it. That one **is** a dashboard setting.

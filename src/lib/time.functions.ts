@@ -101,10 +101,10 @@ export const punchClock = createServerFn({ method: "POST" })
       .single();
     if (insErr) throw new Error(insErr.message);
 
-    // Send Push Notification asynchronously via OneSignal
-    const onesignalAppId = process.env.ONESIGNAL_APP_ID || process.env.VITE_ONESIGNAL_APP_ID;
-    const onesignalApiKey = process.env.ONESIGNAL_REST_API_KEY;
-    if (onesignalAppId && onesignalApiKey) {
+    // Notify admin devices. Awaited so the serverless request doesn't cut it off,
+    // but a failure must never fail the punch itself.
+    try {
+      const { notifyAdmins } = await import("./push.server");
       const name = prof?.full_name || "An employee";
       const action = inserted.type === "in" ? "CLOCKED IN" : "CLOCKED OUT";
       const timeStr = new Date(inserted.punched_at).toLocaleTimeString("en-US", {
@@ -112,31 +112,11 @@ export const punchClock = createServerFn({ method: "POST" })
         minute: "2-digit",
         hour12: true,
       });
-      const title = "Attendance Alert";
-      const message = `${name} has ${action} at ${timeStr}.`;
-
-      fetch("https://onesignal.com/api/v1/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          Authorization: `Basic ${onesignalApiKey}`,
-        },
-        body: JSON.stringify({
-          app_id: onesignalAppId,
-          included_segments: ["Subscribed Users"],
-          headings: { en: title },
-          contents: { en: message },
-        }),
-      })
-        .then((res) => {
-          if (!res.ok) {
-            console.error("Failed to send OneSignal push notification, status:", res.status);
-          }
-        })
-        .catch((err) => {
-          console.error("Error sending OneSignal push notification:", err);
-        });
+      await notifyAdmins("Attendance Alert", `${name} has ${action} at ${timeStr}.`);
+    } catch (err) {
+      console.error("[push] punch notification failed:", err);
     }
+
 
     return { type: inserted.type as "in" | "out", punched_at: inserted.punched_at as string };
   });
@@ -447,3 +427,46 @@ export const updateTimeEntry = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+// --- Push notifications: device registration + test send ---
+export const registerPushDevice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ subscriptionId: z.string().min(8), userAgent: z.string().max(500).optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("push_devices")
+      .upsert(
+        {
+          user_id: userId,
+          subscription_id: data.subscriptionId,
+          user_agent: data.userAgent ?? null,
+          last_seen_at: new Date().toISOString(),
+        },
+        { onConflict: "subscription_id" },
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const sendTestPush = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { notifyAdmins } = await import("./push.server");
+    const result = await notifyAdmins(
+      "Test alert",
+      "Notifications are working — real clock in / out alerts will look like this.",
+    );
+    return result;
+  });
+
+export const countAdminPushDevices = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { getAdminSubscriptionIds } = await import("./push.server");
+    return { count: (await getAdminSubscriptionIds()).length };
+  });

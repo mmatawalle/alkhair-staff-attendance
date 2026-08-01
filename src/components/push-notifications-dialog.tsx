@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Bell, BellOff, BellRing, CheckCircle2, ExternalLink, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { registerPushDevice, sendTestPush } from "@/lib/time.functions";
 
 type Stage = "intro" | "requesting" | "granted" | "denied" | "blocked-iframe" | "unsupported" | "error";
 
@@ -32,6 +34,45 @@ export function PushNotificationsButton() {
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [subscribed, setSubscribed] = useState(false);
   const [ready, setReady] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const registerDevice = useServerFn(registerPushDevice);
+  const testPush = useServerFn(sendTestPush);
+  const registeredRef = useRef<string | null>(null);
+
+  // Save this device's OneSignal subscription id so the server can target admins.
+  const saveDevice = useCallback(
+    async (subscriptionId?: string | null) => {
+      if (!subscriptionId || registeredRef.current === subscriptionId) return;
+      registeredRef.current = subscriptionId;
+      try {
+        await registerDevice({
+          data: { subscriptionId, userAgent: navigator.userAgent.slice(0, 500) },
+        });
+      } catch (e: any) {
+        registeredRef.current = null;
+        console.error("Failed to register push device", e);
+        throw e;
+      }
+    },
+    [registerDevice],
+  );
+
+  const runTest = useCallback(async () => {
+    setTesting(true);
+    try {
+      const res: any = await (testPush as any)();
+      if (res?.sent) {
+        toast.success(`Test notification sent to ${res.recipients} device(s).`);
+      } else {
+        toast.error(res?.error ?? "Could not send the test notification.");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not send the test notification.");
+    } finally {
+      setTesting(false);
+    }
+  }, [testPush]);
+
 
   // Track subscription state from the OneSignal SDK
   useEffect(() => {
@@ -43,11 +84,15 @@ export function PushNotificationsButton() {
         const sub = OneSignal.User?.PushSubscription ?? OneSignal.User?.pushSubscription;
         if (!sub) return false;
         setSubscribed(Boolean(sub.optedIn));
+        if (sub.optedIn && sub.id) void saveDevice(sub.id).catch(() => {});
         sub.addEventListener?.("change", (event: any) => {
-          setSubscribed(Boolean(event?.current?.optedIn));
+          const cur = event?.current;
+          setSubscribed(Boolean(cur?.optedIn));
+          if (cur?.optedIn && cur?.id) void saveDevice(cur.id).catch(() => {});
         });
         return true;
       };
+
       if (!check()) {
         interval = setInterval(() => {
           if (check() && interval) clearInterval(interval);
@@ -57,7 +102,8 @@ export function PushNotificationsButton() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, []);
+  }, [saveDevice]);
+
 
   const openDialog = useCallback(() => {
     setErrorMsg("");
@@ -100,21 +146,29 @@ export function PushNotificationsButton() {
         setStage("error");
         return;
       }
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("Timed out while registering this device.")), 15000);
+      const subscriptionId = await new Promise<string>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Timed out while registering this device.")), 20000);
         withOneSignal(async (OneSignal: any) => {
           try {
             await OneSignal.Notifications?.requestPermission?.();
             const sub = OneSignal.User?.PushSubscription ?? OneSignal.User?.pushSubscription;
             await sub?.optIn?.();
+            // The subscription id can take a moment to be assigned.
+            let id: string | undefined = sub?.id;
+            for (let i = 0; i < 20 && !id; i++) {
+              await new Promise((r) => setTimeout(r, 500));
+              id = sub?.id;
+            }
             clearTimeout(timeout);
-            resolve();
+            if (!id) reject(new Error("This device didn't get a push subscription id. Reload and try again."));
+            else resolve(id);
           } catch (e: any) {
             clearTimeout(timeout);
             reject(e);
           }
         });
       });
+      await saveDevice(subscriptionId);
       setSubscribed(true);
       setStage("granted");
       toast.success("Phone notifications enabled on this device.");
@@ -122,7 +176,8 @@ export function PushNotificationsButton() {
       setErrorMsg(e?.message ?? "Something went wrong while enabling notifications.");
       setStage("error");
     }
-  }, [ready]);
+  }, [ready, saveDevice]);
+
 
   const openInNewTab = () => {
     window.open(window.location.href, "_blank", "noopener,noreferrer");
@@ -191,9 +246,14 @@ export function PushNotificationsButton() {
                     : "Permission is granted. Finishing device registration — if you don't get alerts, reload this page once."}
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={runTest} disabled={testing}>
+                  {testing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <BellRing className="h-4 w-4 mr-1.5" />}
+                  Send test notification
+                </Button>
                 <Button onClick={() => setOpen(false)}>Done</Button>
               </DialogFooter>
+
             </>
           )}
 
