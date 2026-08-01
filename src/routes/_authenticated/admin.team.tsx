@@ -597,7 +597,7 @@ function AdminTeam() {
           {/* KPI Dashboard Metrics Cards */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
 
-            <Card>
+            <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Present Today
@@ -613,7 +613,7 @@ function AdminTeam() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Total Active Staff
@@ -626,7 +626,7 @@ function AdminTeam() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="min-w-0">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Team Hours (Week)
@@ -714,7 +714,7 @@ function AdminTeam() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="min-w-0 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-1">
                   <Users className="h-4 w-4 text-primary" /> Workload comparison
