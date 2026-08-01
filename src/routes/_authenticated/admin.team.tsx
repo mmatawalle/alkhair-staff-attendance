@@ -530,48 +530,8 @@ function AdminTeam() {
     });
   };
 
-  const [subscribed, setSubscribed] = useState(false);
-  const [canSubscribe, setCanSubscribe] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const OneSignalDeferred = ((window as any).OneSignalDeferred = (window as any).OneSignalDeferred || []);
-      OneSignalDeferred.push((OneSignal: any) => {
-        setCanSubscribe(true);
-        const checkStatus = () => {
-          const pushSub = OneSignal.User?.pushSubscription;
-          if (pushSub) {
-            setSubscribed(pushSub.optedIn);
-            pushSub.addEventListener("change", (event: any) => {
-              setSubscribed(event.current.optedIn);
-            });
-            return true;
-          }
-          return false;
-        };
 
-        if (!checkStatus()) {
-          const interval = setInterval(() => {
-            if (checkStatus()) clearInterval(interval);
-          }, 500);
-          return () => clearInterval(interval);
-        }
-      });
-    }
-  }, []);
-
-  const handleSubscribe = () => {
-    if (typeof window !== "undefined") {
-      const OneSignalDeferred = ((window as any).OneSignalDeferred = (window as any).OneSignalDeferred || []);
-      OneSignalDeferred.push((OneSignal: any) => {
-        if (OneSignal.Notifications?.requestPermission) {
-          OneSignal.Notifications.requestPermission().then(() => {
-            OneSignal.User?.pushSubscription?.optIn?.();
-          });
-        }
-      });
-    }
-  };
 
   // Chart configuration labels
   const areaChartConfig = {
