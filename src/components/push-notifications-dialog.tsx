@@ -102,7 +102,8 @@ export function PushNotificationsButton() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, []);
+  }, [saveDevice]);
+
 
   const openDialog = useCallback(() => {
     setErrorMsg("");
