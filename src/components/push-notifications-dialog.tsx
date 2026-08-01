@@ -60,7 +60,7 @@ export function PushNotificationsButton() {
   const runTest = useCallback(async () => {
     setTesting(true);
     try {
-      const res: any = await testPush({ data: {} });
+      const res: any = await (testPush as any)();
       if (res?.sent) {
         toast.success(`Test notification sent to ${res.recipients} device(s).`);
       } else {
