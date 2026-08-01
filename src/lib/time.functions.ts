@@ -102,7 +102,7 @@ export const punchClock = createServerFn({ method: "POST" })
     if (insErr) throw new Error(insErr.message);
 
     // Send Push Notification asynchronously via OneSignal
-    const onesignalAppId = process.env.VITE_ONESIGNAL_APP_ID;
+    const onesignalAppId = process.env.ONESIGNAL_APP_ID || process.env.VITE_ONESIGNAL_APP_ID;
     const onesignalApiKey = process.env.ONESIGNAL_REST_API_KEY;
     if (onesignalAppId && onesignalApiKey) {
       const name = prof?.full_name || "An employee";
