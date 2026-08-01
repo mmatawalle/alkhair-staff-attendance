@@ -84,11 +84,15 @@ export function PushNotificationsButton() {
         const sub = OneSignal.User?.PushSubscription ?? OneSignal.User?.pushSubscription;
         if (!sub) return false;
         setSubscribed(Boolean(sub.optedIn));
+        if (sub.optedIn && sub.id) void saveDevice(sub.id).catch(() => {});
         sub.addEventListener?.("change", (event: any) => {
-          setSubscribed(Boolean(event?.current?.optedIn));
+          const cur = event?.current;
+          setSubscribed(Boolean(cur?.optedIn));
+          if (cur?.optedIn && cur?.id) void saveDevice(cur.id).catch(() => {});
         });
         return true;
       };
+
       if (!check()) {
         interval = setInterval(() => {
           if (check() && interval) clearInterval(interval);
