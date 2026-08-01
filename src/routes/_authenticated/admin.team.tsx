@@ -559,18 +559,8 @@ function AdminTeam() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {canSubscribe && (
-            <button
-              onClick={handleSubscribe}
-              className={`text-xs px-3 py-1.5 rounded-full border flex items-center gap-1.5 font-medium transition-all ${
-                subscribed
-                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                  : "bg-sky-500/10 text-sky-500 border-sky-500/20 hover:bg-sky-500/20"
-              }`}
-            >
-              <span>🔔</span> {subscribed ? "Subscribed to phone notifications" : "Enable phone notifications"}
-            </button>
-          )}
+          <PushNotificationsButton />
+
           <Button variant="outline" size="sm" asChild>
             <Link to="/dashboard" search={{ view: "employee" }}>
               <Clock className="h-4 w-4 mr-1.5" /> Clock Page
