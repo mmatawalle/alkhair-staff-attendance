@@ -427,3 +427,46 @@ export const updateTimeEntry = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+// --- Push notifications: device registration + test send ---
+export const registerPushDevice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ subscriptionId: z.string().min(8), userAgent: z.string().max(500).optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("push_devices")
+      .upsert(
+        {
+          user_id: userId,
+          subscription_id: data.subscriptionId,
+          user_agent: data.userAgent ?? null,
+          last_seen_at: new Date().toISOString(),
+        },
+        { onConflict: "subscription_id" },
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const sendTestPush = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { notifyAdmins } = await import("./push.server");
+    const result = await notifyAdmins(
+      "Test alert",
+      "Notifications are working — real clock in / out alerts will look like this.",
+    );
+    return result;
+  });
+
+export const countAdminPushDevices = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { getAdminSubscriptionIds } = await import("./push.server");
+    return { count: (await getAdminSubscriptionIds()).length };
+  });
