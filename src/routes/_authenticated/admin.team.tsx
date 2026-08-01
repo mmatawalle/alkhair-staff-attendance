@@ -658,16 +658,17 @@ function AdminTeam() {
           </div>
 
           {/* Charts Row */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2 pb-4">
-                <div>
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+            <Card className="min-w-0 overflow-hidden">
+              <CardHeader className="flex flex-col items-start gap-2 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <CardTitle className="text-base flex items-center gap-1">
                     <TrendingUp className="h-4 w-4 text-primary" /> Daily Attendance Hours
                   </CardTitle>
                   <CardDescription>Total hours worked across the whole team</CardDescription>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 shrink-0">
+
                   {[7, 14, 30].map((d) => (
                     <Button
                       key={d}
