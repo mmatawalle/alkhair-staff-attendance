@@ -848,8 +848,8 @@ function AdminTeam() {
             <CardHeader>
               <CardTitle className="text-base">Hours by employee</CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <Table>
+            <CardContent className="px-0 sm:px-6 overflow-x-auto">
+              <Table className="min-w-[760px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
