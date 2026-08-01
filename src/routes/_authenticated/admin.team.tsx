@@ -551,49 +551,52 @@ function AdminTeam() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Bar */}
-      <div className="flex items-center justify-between flex-wrap gap-4 border-b pb-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Admin Control Center</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+      <div className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl font-extrabold tracking-tight sm:text-3xl">Admin Control Center</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">
             Consolidated operational dashboard for Alkhair attendance telemetry.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <PushNotificationsButton />
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <div className="col-span-2 sm:col-auto [&>button]:w-full sm:[&>button]:w-auto">
+            <PushNotificationsButton />
+          </div>
 
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="h-10 sm:h-9" asChild>
             <Link to="/dashboard" search={{ view: "employee" }}>
               <Clock className="h-4 w-4 mr-1.5" /> Clock Page
             </Link>
           </Button>
-          <Button variant="outline" size="sm" onClick={exportCSV}>
+          <Button variant="outline" size="sm" className="h-10 sm:h-9" onClick={exportCSV}>
             <Download className="h-4 w-4 mr-1.5" /> Export Logs
           </Button>
         </div>
       </div>
 
       {/* Tabs Layout Navigation */}
-      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg bg-card border rounded-lg p-1">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg bg-card border rounded-lg p-1 h-auto">
+          <TabsTrigger value="overview" className="flex flex-col gap-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:text-sm">
             <Activity className="h-4 w-4" /> Overview
           </TabsTrigger>
-          <TabsTrigger value="staff" className="flex items-center gap-2">
-            <Users className="h-4 w-4" /> Staff Management
+          <TabsTrigger value="staff" className="flex flex-col gap-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:text-sm">
+            <Users className="h-4 w-4" /> <span className="sm:hidden">Staff</span><span className="hidden sm:inline">Staff Management</span>
           </TabsTrigger>
-          <TabsTrigger value="kiosk" className="flex items-center gap-2">
-            <Monitor className="h-4 w-4" /> Kiosk Setup
+          <TabsTrigger value="kiosk" className="flex flex-col gap-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:text-sm">
+            <Monitor className="h-4 w-4" /> <span className="sm:hidden">Kiosk</span><span className="hidden sm:inline">Kiosk Setup</span>
           </TabsTrigger>
         </TabsList>
 
         {/* ======================================================== */}
         {/* TAB 1: OVERVIEW & ANALYTICS                             */}
         {/* ======================================================== */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
           {/* KPI Dashboard Metrics Cards */}
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
