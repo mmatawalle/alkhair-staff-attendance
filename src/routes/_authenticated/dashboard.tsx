@@ -7,13 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useMemo, useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { QrCode, LogIn, LogOut, History, Camera, Target } from "lucide-react";
 import { formatDistanceToNow, format, isSameWeek } from "date-fns";
 import { QrScannerDialog } from "@/components/qr-scanner-dialog";
+import { z } from "zod";
+
+const dashboardSearchSchema = z.object({
+  view: z.enum(["employee", "admin"]).optional(),
+});
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  validateSearch: dashboardSearchSchema,
   component: Home,
 });
 
@@ -41,12 +47,19 @@ function Home() {
   const punch = useServerFn(punchClock);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { view } = Route.useSearch();
 
   const meQ = useQuery({ queryKey: ["me"], queryFn: () => fetchMe() });
   const entriesQ = useQuery({
     queryKey: ["my-entries", 14],
     queryFn: () => fetchEntries({ data: { days: 14 } }),
   });
+
+  useEffect(() => {
+    if (meQ.data?.isAdmin && view !== "employee") {
+      navigate({ to: "/admin/team" });
+    }
+  }, [meQ.data, view, navigate]);
 
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,6 +84,36 @@ function Home() {
       setBusy(false);
     }
   };
+
+  const progressCard = useMemo(() => {
+    const target = Number(meQ.data?.profile?.weekly_target_hours ?? 40) || 0;
+    const now = new Date();
+    const weekEntries = (entriesQ.data ?? []).filter((e) =>
+      isSameWeek(new Date(e.punched_at), now, { weekStartsOn: 1 }),
+    );
+    const hours = computeHours(weekEntries, true);
+    const pct = target > 0 ? Math.min(100, (hours / target) * 100) : 0;
+    const remaining = Math.max(0, target - hours);
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-4 w-4 text-primary" /> This week's progress
+          </CardTitle>
+          <CardDescription>
+            {hours.toFixed(1)}h / {target.toFixed(1)}h · {pct.toFixed(0)}% complete
+            {target > 0 &&
+              (remaining > 0
+                ? ` · ${remaining.toFixed(1)}h remaining`
+                : ` · target reached 🎉`)}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Progress value={pct} />
+        </CardContent>
+      </Card>
+    );
+  }, [meQ.data, entriesQ.data]);
 
   return (
     <div className="space-y-6">
@@ -126,35 +169,7 @@ function Home() {
         </CardContent>
       </Card>
 
-      {(() => {
-        const target = Number(meQ.data?.profile?.weekly_target_hours ?? 40) || 0;
-        const now = new Date();
-        const weekEntries = (entriesQ.data ?? []).filter((e) =>
-          isSameWeek(new Date(e.punched_at), now, { weekStartsOn: 1 }),
-        );
-        const hours = computeHours(weekEntries, true);
-        const pct = target > 0 ? Math.min(100, (hours / target) * 100) : 0;
-        const remaining = Math.max(0, target - hours);
-        return (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Target className="h-4 w-4 text-primary" /> This week's progress
-              </CardTitle>
-              <CardDescription>
-                {hours.toFixed(1)}h / {target.toFixed(1)}h · {pct.toFixed(0)}% complete
-                {target > 0 &&
-                  (remaining > 0
-                    ? ` · ${remaining.toFixed(1)}h remaining`
-                    : ` · target reached 🎉`)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Progress value={pct} />
-            </CardContent>
-          </Card>
-        );
-      })()}
+      {progressCard}
 
       <QrScannerDialog
         open={scanOpen}
@@ -175,7 +190,7 @@ function Home() {
           {entriesQ.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : (entriesQ.data?.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground">No punches in the last 7 days.</p>
+            <p className="text-sm text-muted-foreground">No punches in the last 14 days.</p>
           ) : (
             <ul className="divide-y">
               {entriesQ.data!.slice(0, 10).map((e) => (
