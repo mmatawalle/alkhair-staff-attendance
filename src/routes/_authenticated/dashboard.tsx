@@ -217,7 +217,6 @@ function Home() {
                     {format(new Date(e.punched_at), "EEE, MMM d • p")}
                   </span>
                 </li>
-                </li>
               ))}
             </ul>
           )}
