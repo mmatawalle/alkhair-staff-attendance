@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { registerPushDevice, sendTestPush } from "@/lib/time.functions";
 
-type Stage = "intro" | "requesting" | "granted" | "denied" | "blocked-iframe" | "unsupported" | "error";
+type Stage = "intro" | "requesting" | "granted" | "denied" | "ios-install" | "blocked-iframe" | "unsupported" | "error";
 
 function isInIframe() {
   try {
@@ -21,6 +21,16 @@ function isInIframe() {
   } catch {
     return true;
   }
+}
+
+function isIos() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 }
 
 function withOneSignal(cb: (OneSignal: any) => void) {
@@ -111,8 +121,12 @@ export function PushNotificationsButton() {
 
     if (!("Notification" in window) || !("serviceWorker" in navigator)) {
       setStage("unsupported");
-    } else if (Notification.permission === "granted") {
+    } else if (isIos() && !isStandalone()) {
+      setStage("ios-install");
+    } else if (Notification.permission === "granted" && subscribed) {
       setStage("granted");
+    } else if (Notification.permission === "granted") {
+      setStage("intro");
     } else if (Notification.permission === "denied") {
       setStage(isInIframe() ? "blocked-iframe" : "denied");
     } else if (isInIframe()) {
@@ -121,12 +135,16 @@ export function PushNotificationsButton() {
       setStage("intro");
     }
     setOpen(true);
-  }, []);
+  }, [subscribed]);
 
   const request = useCallback(async () => {
     setStage("requesting");
     setErrorMsg("");
     try {
+      if (isIos() && !isStandalone()) {
+        setStage("ios-install");
+        return;
+      }
       // Ask the browser directly so the native prompt is tied to this click.
       const permission = await Notification.requestPermission();
       if (permission === "denied") {
@@ -160,7 +178,13 @@ export function PushNotificationsButton() {
               id = sub?.id;
             }
             clearTimeout(timeout);
-            if (!id) reject(new Error("This device didn't get a push subscription id. Reload and try again."));
+            if (!id) {
+              reject(new Error(
+                isIos()
+                  ? "Permission is allowed, but this iPhone did not finish push registration. Open the Home Screen app (not Safari), then try again. If needed, remove the old Home Screen icon and add it again."
+                  : "This device didn't get a push subscription id. Reload and try again.",
+              ));
+            }
             else resolve(id);
           } catch (e: any) {
             clearTimeout(timeout);
@@ -286,6 +310,30 @@ export function PushNotificationsButton() {
                   Close
                 </Button>
                 <Button onClick={() => window.location.reload()}>Reload page</Button>
+              </DialogFooter>
+            </>
+          )}
+
+          {stage === "ios-install" && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ExternalLink className="h-5 w-5" /> Open the Home Screen app
+                </DialogTitle>
+                <DialogDescription asChild>
+                  <div className="space-y-2 text-sm">
+                    <p>iPhone notifications only register from the installed Home Screen app, not from a Safari tab.</p>
+                    <ol className="list-decimal space-y-1 pl-5">
+                      <li>In Safari, tap <strong>Share</strong> → <strong>Add to Home Screen</strong>.</li>
+                      <li>Close Safari and launch <strong>Alkhair Time</strong> from its Home Screen icon.</li>
+                      <li>Sign in, then tap <strong>Enable phone notifications</strong> again.</li>
+                    </ol>
+                    <p className="text-muted-foreground">If you installed it before this update, remove the old icon and add it again.</p>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button onClick={() => setOpen(false)}>Got it</Button>
               </DialogFooter>
             </>
           )}
