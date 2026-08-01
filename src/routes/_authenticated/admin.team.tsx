@@ -525,9 +525,7 @@ function AdminTeam() {
   };
 
   const setTab = (newTab: string) => {
-    navigate({
-      search: (prev: any) => ({ ...prev, tab: newTab }),
-    });
+    navigate({ search: ((prev: any) => ({ ...prev, tab: newTab })) as any });
   };
 
   const [subscribed, setSubscribed] = useState(false);
